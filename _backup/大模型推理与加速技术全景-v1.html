@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大模型推理与加速技术全景 · AI Infra 分享</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2316233a'/%3E%3Crect x='7' y='7' width='8' height='8' rx='2' fill='%23e8590c'/%3E%3Crect x='17' y='7' width='8' height='8' rx='2' fill='%230d9488'/%3E%3Crect x='7' y='17' width='8' height='8' rx='2' fill='%233b82c4'/%3E%3Crect x='17' y='17' width='8' height='8' rx='2' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>
+:root{
+  --paper:#eceff3; --card:#ffffff; --ink:#16233a; --ink-soft:#3c4d66; --muted:#697a92;
+  --line:#d7dee8; --line-soft:#e7ecf2;
+  --navy:#1e3a5f; --navy-2:#2b527e; --blue:#2f6fb0; --blue-soft:#e7eff9;
+  --accent:#e8590c; --accent-2:#d7541a; --accent-soft:#fdeee2;
+  --teal:#0d9488; --teal-soft:#e2f1ef;
+  --gold:#b9832b; --gold-soft:#f7efdd;
+  --shadow:0 1px 2px rgba(22,35,58,.05),0 8px 24px -12px rgba(22,35,58,.18);
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.75;font-size:16px;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:34px 34px;background-attachment:fixed}
+::selection{background:var(--accent);color:#fff}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1000px;margin:0 auto;padding:0 22px}
+
+/* progress + nav */
+#bar{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));z-index:60}
+nav#top{position:sticky;top:0;z-index:50;background:rgba(236,239,243,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:9px 22px}
+.brand{font-weight:900;font-size:14.5px;letter-spacing:.02em;white-space:nowrap}
+.brand span{color:var(--accent)}
+.navlinks{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
+.navlinks a{font-size:12.5px;color:var(--ink-soft);padding:4px 9px;border-radius:6px;white-space:nowrap}
+.navlinks a:hover{background:#fff;text-decoration:none;color:var(--accent)}
+
+/* hero */
+header.hero{padding:74px 0 40px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;font-weight:600}
+h1{font-size:clamp(30px,5vw,46px);font-weight:900;line-height:1.22;margin:16px 0 14px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--accent);position:relative}
+.hero p.lead{font-size:17.5px;color:var(--ink-soft);max-width:760px;font-weight:400}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.meta-row span{background:#fff;border:1px solid var(--line);padding:4px 11px;border-radius:20px}
+.meta-row b{color:var(--ink);font-weight:600}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}
+.hstat{background:var(--navy);color:#fff;border-radius:12px;padding:16px 16px 14px;position:relative;overflow:hidden}
+.hstat:nth-child(2){background:var(--teal)} .hstat:nth-child(3){background:var(--accent)} .hstat:nth-child(4){background:var(--gold)}
+.hstat .num{font-size:27px;font-weight:900;line-height:1.1;font-family:var(--mono)}
+.hstat .lab{font-size:12.5px;opacity:.9;margin-top:7px;line-height:1.4}
+
+/* sections */
+section{padding:46px 0 8px;scroll-margin-top:64px}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:22px;border-bottom:2px solid var(--ink);padding-bottom:12px}
+.sec-no{font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:var(--ink);padding:3px 10px;border-radius:6px;align-self:center}
+.sec-head h2{font-size:clamp(22px,3.2vw,29px);font-weight:900;letter-spacing:-.01em}
+.sec-head .sub{margin-left:auto;font-size:12.5px;color:var(--muted);font-family:var(--mono)}
+h3{font-size:18.5px;font-weight:700;margin:34px 0 12px;display:flex;align-items:center;gap:9px}
+h3::before{content:"";width:9px;height:9px;background:var(--accent);border-radius:2px;flex:none}
+h4{font-size:15.5px;font-weight:700;margin:22px 0 8px;color:var(--navy)}
+p{margin:11px 0;color:var(--ink-soft)}
+p strong,li strong{color:var(--ink);font-weight:700}
+ul,ol{margin:11px 0 11px 4px;padding-left:22px}
+li{margin:6px 0;color:var(--ink-soft)}
+code{font-family:var(--mono);font-size:.88em;background:var(--blue-soft);color:#1b4a78;padding:1.5px 6px;border-radius:5px}
+small.note{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+
+/* figure cards */
+figure.fig{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px 14px;margin:24px 0;box-shadow:var(--shadow)}
+figure.fig svg{display:block;width:100%;height:auto}
+figure.fig figcaption{font-size:13px;color:var(--muted);margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);display:flex;gap:9px}
+figure.fig figcaption b{color:var(--accent);font-family:var(--mono);font-weight:700;flex:none}
+.fig-wide{padding:22px 18px 14px}
+
+/* callouts */
+.callout{border-radius:12px;padding:15px 18px;margin:20px 0;border:1px solid;font-size:15px}
+.callout .ct{font-weight:800;font-size:13.5px;display:block;margin-bottom:5px;font-family:var(--mono);letter-spacing:.04em}
+.c-key{background:var(--accent-soft);border-color:#f3cdb4}
+.c-key .ct{color:var(--accent)}
+.c-teal{background:var(--teal-soft);border-color:#bfe0db}
+.c-teal .ct{color:var(--teal)}
+.c-blue{background:var(--blue-soft);border-color:#c9dcee}
+.c-blue .ct{color:var(--blue)}
+.c-gold{background:var(--gold-soft);border-color:#e6d6b2}
+.c-gold .ct{color:var(--gold)}
+.callout p{margin:5px 0}
+
+/* tables */
+.tbl-scroll{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);background:#fff}
+table{border-collapse:collapse;width:100%;font-size:14px;table-layout:fixed}
+th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:top;word-wrap:break-word}
+thead th{background:var(--navy);color:#fff;font-weight:600;font-size:13.5px;border-bottom:none}
+tbody tr:nth-child(even){background:#f6f9fc}
+tbody tr:hover{background:var(--accent-soft)}
+td:first-child,th:first-child{font-weight:600;color:var(--ink)}
+
+/* paper chip / cards */
+.paper{display:flex;gap:13px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13.8px;box-shadow:var(--shadow)}
+.paper .pid{font-family:var(--mono);font-weight:700;color:var(--teal);flex:none;font-size:12.5px}
+.paper .ptitle{font-weight:700;color:var(--ink);font-size:14px}
+.paper .pinfo{color:var(--muted);font-size:12.5px;margin-top:2px}
+.paper a{font-family:var(--mono);font-size:12px;white-space:nowrap;align-self:center}
+.paper.spec{border-left-color:var(--accent)} .paper.spec .pid{color:var(--accent)}
+.paper.sys{border-left-color:var(--blue)} .paper.sys .pid{color:var(--blue)}
+.paper.gold{border-left-color:var(--gold)} .paper.gold .pid{color:var(--gold)}
+
+/* tag */
+.tag{display:inline-block;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:1.5px 8px;border-radius:5px;margin:0 3px}
+.t-orange{background:var(--accent-soft);color:var(--accent)}
+.t-teal{background:var(--teal-soft);color:var(--teal)}
+.t-blue{background:var(--blue-soft);color:var(--blue)}
+.t-gold{background:var(--gold-soft);color:var(--gold)}
+.t-gray{background:#eef1f5;color:var(--muted)}
+
+/* audience paths */
+.paths{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0}
+.path-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
+.path-card h4{margin:0 0 8px;font-size:15px;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.path-card ol{margin:6px 0 0;padding-left:18px}
+.path-card li{font-size:13.3px;margin:4px 0}
+
+/* toc */
+.toc{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 26px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:26px 0;box-shadow:var(--shadow)}
+.toc a{font-size:14px;color:var(--ink-soft);display:flex;gap:10px;padding:3px 0}
+.toc a:hover{color:var(--accent);text-decoration:none}
+.toc .n{font-family:var(--mono);color:var(--accent);font-size:12.5px;font-weight:700;flex:none;width:26px}
+
+/* checklist */
+.check li{list-style:none;position:relative;padding-left:28px;margin:10px 0}
+.check li::before{content:"";position:absolute;left:2px;top:5px;width:15px;height:15px;border:2px solid var(--teal);border-radius:4px}
+.check li::after{content:"";position:absolute;left:7px;top:8px;width:5px;height:9px;border:solid var(--teal);border-width:0 2px 2px 0;transform:rotate(42deg)}
+
+/* references */
+ol.refs{padding-left:0;list-style:none;counter-reset:r;font-size:13.5px}
+ol.refs li{counter-increment:r;padding:9px 0 9px 40px;border-bottom:1px solid var(--line-soft);position:relative;color:var(--ink-soft)}
+ol.refs li::before{content:"["counter(r)"]";position:absolute;left:0;top:9px;font-family:var(--mono);font-weight:700;color:var(--accent);font-size:12.5px;width:32px}
+ol.refs li .rt{color:var(--ink);font-weight:600}
+ol.refs li .rv{color:var(--muted);font-size:12.5px;display:block}
+ol.refs a{font-family:var(--mono);font-size:12px}
+
+footer.end{margin-top:60px;padding:40px 0 60px;border-top:2px solid var(--ink);text-align:center}
+footer.end p{font-size:13.5px;color:var(--muted)}
+#toTop{position:fixed;right:22px;bottom:22px;width:42px;height:42px;border-radius:10px;background:var(--navy);color:#fff;border:none;font-size:18px;cursor:pointer;opacity:0;pointer-events:none;transition:.25s;z-index:55;font-family:var(--sans)}
+#toTop.show{opacity:1;pointer-events:auto}
+#toTop:hover{background:var(--accent)}
+
+.katex{font-size:1.02em}
+.formula-box{background:#fbfcfe;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:16px 0;overflow-x:auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+@media(max-width:820px){
+  .hero-stats{grid-template-columns:repeat(2,1fr)}
+  .paths{grid-template-columns:1fr}
+  .toc{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .navlinks{display:none}
+  .sec-head .sub{display:none}
+}
+@media print{body{background:#fff}nav,#bar,#toTop{display:none}figure.fig,.paper,.tbl-scroll{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<nav id="top"><div class="nav-in">
+  <div class="brand">推理加速<span>·</span> AI Infra 分享</div>
+  <div class="navlinks">
+    <a href="#ch0">背景</a><a href="#ch1">基础</a><a href="#ch2">KV Cache</a><a href="#ch3">显存墙</a>
+    <a href="#ch4">服务系统</a><a href="#ch5">PD分离</a><a href="#ch6">投机解码</a><a href="#ch7">KV压缩</a>
+    <a href="#ch8">约束解码</a><a href="#ch9">总结</a>
+  </div>
+</div></nav>
+<header class="hero wrap">
+  <div class="kicker">AI Infra · Inference &amp; Acceleration</div>
+  <h1>大模型推理与加速：<br>从<em>自回归</em>到<em>PD 分离</em>的技术全景</h1>
+  <p class="lead">一篇写给老板、算法同学和研发同学的技术分享：把“一个 token 一个 token 往外蹦”背后的<strong>重复计算、显存墙、调度粒度、架构解耦</strong>四件事讲透，并给出每一项技术对应的原始论文与工程选型。</p>
+  <div class="meta-row">
+    <span>分享主题 <b>LLM 推理与部署加速</b></span>
+    <span>面向 <b>Tech Lead / 算法 / 研发</b></span>
+    <span>形式 <b>图文长文 + 20 张示意图</b></span>
+    <span>参考文献 <b>35 篇（含 arXiv）</b></span>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="num">~12%</div><div class="lab">单请求 Decode 阶段 H100 算力利用率，瓶颈在显存带宽而非算力</div></div>
+    <div class="hstat"><div class="num">60–80%</div><div class="lab">传统连续显存分配下 KV Cache 造成的显存浪费比例</div></div>
+    <div class="hstat"><div class="num">+75%</div><div class="lab">PD 分离后相同 GPU 数量下的吞吐提升（Mooncake 论文实测）</div></div>
+    <div class="hstat"><div class="num">2–3.6×</div><div class="lab">投机解码家族（Medusa / EAGLE / MTP）典型无损加速比</div></div>
+  </div>
+
+  <figure class="fig fig-wide" style="margin-top:34px">
+    <style>
+      .stack{display:flex;flex-direction:column;gap:7px}
+      .layer{display:flex;align-items:stretch;gap:10px}
+      .layer .lname{flex:none;width:96px;border-radius:9px;display:flex;flex-direction:column;justify-content:center;
+        padding:8px 10px;color:#fff;font-weight:700;font-size:12.5px;line-height:1.3}
+      .layer .lname small{font-weight:400;font-size:10.5px;opacity:.82;font-family:var(--mono)}
+      .chips{flex:1;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#f4f7fa;border:1px solid var(--line-soft);border-radius:9px;padding:8px 10px}
+      .chip{font-size:12px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap}
+      .chip b{font-weight:700}
+      .l0 .lname{background:#16233a}.l1 .lname{background:#23456f}.l2 .lname{background:#0d9488}
+      .l3 .lname{background:#2f6fb0}.l4 .lname{background:#b9832b}.l5 .lname{background:#e8590c}
+      .arrow-d{text-align:center;color:var(--muted);font-size:15px;line-height:1}
+    </style>
+    <div class="stack">
+      <div class="layer l0"><div class="lname">硬件 / 互联<small>HARDWARE</small></div>
+        <div class="chips"><span class="chip"><b>GPU</b> H100 / GB200</span><span class="chip"><b>HBM3/3e</b> 3.35TB/s</span><span class="chip"><b>NVLink</b> 机内互联</span><span class="chip"><b>RDMA / IB</b> 跨机直访</span><span class="chip">CPU DRAM / SSD</span></div></div>
+      <div class="arrow-d">▲ 自底向上调用　自顶向下驱动 ▼</div>
+      <div class="layer l1"><div class="lname">算子 / Kernel<small>KERNEL</small></div>
+        <div class="chips"><span class="chip"><b>FlashAttention 1/2/3</b></span><span class="chip">Tiling 分块</span><span class="chip">在线 Softmax</span><span class="chip">算子融合</span><span class="chip">FP8 / 低精度</span></div></div>
+      <div class="layer l2"><div class="lname">显存管理<small>MEMORY</small></div>
+        <div class="chips"><span class="chip"><b>KV Cache</b></span><span class="chip"><b>PagedAttention</b> 分页</span><span class="chip"><b>MLA</b> 潜变量压缩</span><span class="chip">KV 量化 KIVI</span><span class="chip">KV 驱逐 H2O/SnapKV</span></div></div>
+      <div class="layer l3"><div class="lname">调度 / 服务<small>SCHEDULING</small></div>
+        <div class="chips"><span class="chip"><b>Continuous Batching</b></span><span class="chip"><b>Chunked Prefill</b></span><span class="chip"><b>RadixAttention</b> 前缀复用</span><span class="chip">SLO 调度</span></div></div>
+      <div class="layer l4"><div class="lname">系统架构<small>ARCHITECTURE</small></div>
+        <div class="chips"><span class="chip"><b>PD 分离</b></span><span class="chip">DistServe</span><span class="chip">Mooncake</span><span class="chip">Splitwise</span><span class="chip">NVIDIA Dynamo</span></div></div>
+      <div class="layer l5"><div class="lname">解码算法<small>DECODING</small></div>
+        <div class="chips"><span class="chip"><b>Speculative Decoding</b></span><span class="chip">自投机 Early-Exit</span><span class="chip"><b>Medusa</b></span><span class="chip"><b>EAGLE 1/2/3</b></span><span class="chip"><b>MTP</b></span><span class="chip">Lookahead</span><span class="chip">约束解码</span></div></div>
+    </div>
+    <figcaption><b>图 1</b><span>LLM 推理加速技术栈分层全景：下层是硬件与算子，上层是显存管理、调度、架构与解码算法。本文自底向上逐层展开，箭头表示调用 / 驱动关系。</span></figcaption>
+  </figure>
+
+  <h3 style="margin-top:40px">不同角色，建议这样阅读</h3>
+  <div class="paths">
+    <div class="path-card"><h4><span class="dot" style="background:var(--accent)"></span>给老板 / Tech Lead</h4>
+      <ol><li>第 0 章：为什么推理成本高、加速的价值</li><li>第 5 章：PD 分离与资源利用率（+75%）</li><li>第 9 章：结论、落地 checklist 与趋势</li></ol></div>
+    <div class="path-card"><h4><span class="dot" style="background:var(--teal)"></span>给算法同学</h4>
+      <ol><li>第 2 章：KV Cache / MHA-GQA-MLA</li><li>第 6 章：投机解码家族与拒绝采样无损证明</li><li>第 7 章：KV 驱逐 H2O / SnapKV</li></ol></div>
+    <div class="path-card"><h4><span class="dot" style="background:var(--blue)"></span>给研发同学</h4>
+      <ol><li>第 1 章：Prefill / Decode 心智模型</li><li>第 3–4 章：显存墙、FlashAttention、服务调度</li><li>第 8 章：约束解码工程实现</li></ol></div>
+  </div>
+
+  <div class="toc">
+    <a href="#ch0"><span class="n">00</span> 为什么推理加速值得做：两大根本瓶颈</a>
+    <a href="#ch1"><span class="n">01</span> 推理是怎么发生的：Prefill 与 Decode</a>
+    <a href="#ch2"><span class="n">02</span> KV Cache：推理加速第一性原理</a>
+    <a href="#ch3"><span class="n">03</span> 显存墙、Roofline 与 FlashAttention</a>
+    <a href="#ch4"><span class="n">04</span> 服务系统：Continuous Batching 与分页</a>
+    <a href="#ch5"><span class="n">05</span> 架构级：PD 分离三家方案</a>
+    <a href="#ch6"><span class="n">06</span> 解码算法：投机解码家族全对比</a>
+    <a href="#ch7"><span class="n">07</span> 长上下文：KV 压缩与驱逐</a>
+    <a href="#ch8"><span class="n">08</span> 结构化输出：约束解码</a>
+    <a href="#ch9"><span class="n">09</span> 总结、落地清单与前沿趋势</a>
+  </div>
+</header>
+<!-- ================= 第 0 章 ================= -->
+<section id="ch0" class="wrap">
+  <div class="sec-head"><span class="sec-no">00</span><h2>为什么推理加速值得做</h2><span class="sub">WHY IT MATTERS</span></div>
+
+  <p>过去做后端，我们优化的是 QPS、RT、连接池与缓存；转到 AI Infra 后，优化对象变成了一个更“反直觉”的东西——<strong>大模型推理（Inference）</strong>。训练是“一次性把题算完”，而推理是 7×24 小时在线、要同时服务海量用户、且<strong>逐字（token）生成</strong>的过程。它决定了两件最花钱的事：<strong>用户的等待时延</strong>与<strong>GPU 的持有成本</strong>。</p>
+
+  <p>大模型推理慢、贵，根子上是两个绕不开的矛盾：</p>
+  <ul>
+    <li><strong>矛盾一：自回归的串行依赖（算法层面）。</strong>第 $N$ 个 token 必须等前 $N-1$ 个 token 全部生成后才能计算。哪怕 GPU 有上万个并行核心，原生解码也只能“一个一个往外蹦”，并行度天然为 1。</li>
+    <li><strong>矛盾二：重复计算 + 显存墙（系统层面）。</strong>每生成一个新词都要把全部历史重新参与注意力计算（重复算力浪费）；而真正算的时候，GPU 算力又远快于显存搬运速度，计算单元大部分时间在“等数据”——这就是<strong>显存墙（Memory Wall）</strong>。</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 270" role="img" aria-label="自回归串行解码与 GPU 利用率">
+      <defs><marker id="ar0" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#697a92"/></marker></defs>
+      <!-- token + forward columns -->
+      <g font-family="inherit" text-anchor="middle">
+        <!-- serial arrows -->
+        <g stroke="#697a92" stroke-width="2" marker-end="url(#ar0)">
+          <line x1="150" y1="120" x2="206" y2="120"/><line x1="310" y1="120" x2="366" y2="120"/>
+          <line x1="470" y1="120" x2="526" y2="120"/><line x1="630" y1="120" x2="686" y2="120"/>
+        </g>
+        <g class="fcol" text-anchor="middle">
+          <!-- c=105,265,425,585,745 -->
+          <g>
+            <rect x="60" y="40" width="90" height="36" rx="8" fill="#e7eff9" stroke="#c9dcee"/><text x="105" y="63" font-size="13" fill="#16233a">dogs</text>
+            <line x1="105" y1="78" x2="105" y2="96" stroke="#697a92" stroke-width="2" marker-end="url(#ar0)"/>
+            <rect x="60" y="98" width="90" height="44" rx="8" fill="#23456f"/><text x="105" y="118" font-size="12.5" fill="#fff" font-weight="700">前向 #1</text><text x="105" y="135" font-size="10.5" fill="#a9c6e4">读全部权重</text>
+          </g>
+          <g>
+            <rect x="220" y="40" width="90" height="36" rx="8" fill="#e7eff9" stroke="#c9dcee"/><text x="265" y="63" font-size="13" fill="#16233a">love</text>
+            <line x1="265" y1="78" x2="265" y2="96" stroke="#697a92" stroke-width="2" marker-end="url(#ar0)"/>
+            <rect x="220" y="98" width="90" height="44" rx="8" fill="#23456f"/><text x="265" y="118" font-size="12.5" fill="#fff" font-weight="700">前向 #2</text><text x="265" y="135" font-size="10.5" fill="#a9c6e4">读全部权重</text>
+          </g>
+          <g>
+            <rect x="380" y="40" width="90" height="36" rx="8" fill="#e7eff9" stroke="#c9dcee"/><text x="425" y="63" font-size="13" fill="#16233a">chasing</text>
+            <line x1="425" y1="78" x2="425" y2="96" stroke="#697a92" stroke-width="2" marker-end="url(#ar0)"/>
+            <rect x="380" y="98" width="90" height="44" rx="8" fill="#23456f"/><text x="425" y="118" font-size="12.5" fill="#fff" font-weight="700">前向 #3</text><text x="425" y="135" font-size="10.5" fill="#a9c6e4">读全部权重</text>
+          </g>
+          <g>
+            <rect x="540" y="40" width="90" height="36" rx="8" fill="#e7eff9" stroke="#c9dcee"/><text x="585" y="63" font-size="13" fill="#16233a">after</text>
+            <line x1="585" y1="78" x2="585" y2="96" stroke="#697a92" stroke-width="2" marker-end="url(#ar0)"/>
+            <rect x="540" y="98" width="90" height="44" rx="8" fill="#23456f"/><text x="585" y="118" font-size="12.5" fill="#fff" font-weight="700">前向 #4</text><text x="585" y="135" font-size="10.5" fill="#a9c6e4">读全部权重</text>
+          </g>
+          <g>
+            <rect x="700" y="40" width="90" height="36" rx="8" fill="#e7eff9" stroke="#c9dcee"/><text x="745" y="63" font-size="13" fill="#16233a">cars</text>
+            <line x1="745" y1="78" x2="745" y2="96" stroke="#697a92" stroke-width="2" marker-end="url(#ar0)"/>
+            <rect x="700" y="98" width="90" height="44" rx="8" fill="#23456f"/><text x="745" y="118" font-size="12.5" fill="#fff" font-weight="700">前向 #5</text><text x="745" y="135" font-size="10.5" fill="#a9c6e4">读全部权重</text>
+          </g>
+        </g>
+        <!-- utilization track -->
+        <text x="60" y="214" text-anchor="start" font-size="13" fill="#697a92">GPU 算力利用率</text>
+        <rect x="60" y="224" width="730" height="16" rx="8" fill="#eef1f5"/>
+        <rect x="60" y="224" width="88" height="16" rx="8" fill="#e8590c"/>
+        <text x="160" y="237" text-anchor="start" font-size="12" fill="#fff" font-weight="700">≈12%</text>
+        <text x="800" y="237" text-anchor="end" font-size="12" fill="#697a92">串行 + 等显存，算力大量闲置</text>
+      </g>
+    </svg>
+    <style>
+      .fcol text{font-size:13.5px}
+    </style>
+    <figcaption><b>图 2</b><span>原生自回归解码：5 个 token 触发 5 次<strong>串行</strong>前向，每次只产出 1 个 token；GPU 利用率长期处于低位。后续所有优化，本质都在攻击这张图。</span></figcaption>
+  </figure>
+
+  <div class="callout c-key">
+    <span class="ct">本文的一条主线</span>
+    <p>推理加速 = 在不牺牲输出质量（<strong>无损</strong>）的前提下，分别从四个层面动手：<strong>① 算子</strong>（FlashAttention）→ <strong>② 显存</strong>（KV Cache / 分页 / 压缩）→ <strong>③ 调度</strong>（Continuous Batching / Chunked Prefill / 前缀复用）→ <strong>④ 架构</strong>（PD 分离）；再叠加一类<strong>解码算法</strong>（投机解码家族）直接打破串行。</p>
+  </div>
+</section>
+
+<!-- ================= 第 1 章 ================= -->
+<section id="ch1" class="wrap">
+  <div class="sec-head"><span class="sec-no">01</span><h2>推理是怎么发生的</h2><span class="sub">PREFILL vs DECODE</span></div>
+
+  <h3>30 秒回顾 Transformer 与 QKV</h3>
+  <p>每个 token 先经过 Embedding 变成向量，再流过 $L$ 个结构相同的 <strong>Transformer Block</strong>（多头自注意力 MHA + 前馈网络 MLP/FFN，配 LayerNorm 与残差），最后由输出 Linear 层投影成词表维度的 logits。注意力做的事，是让当前 token 的 Query 与所有历史 token 的 Key 打分、再按权重取 Value：</p>
+  <div class="formula-box">$$\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V$$</div>
+  <p>其中 $Q$ 是当前 token 在“问什么”，$K$ 是每个历史 token 的“标签”，$V$ 是每个历史 token 的“内容”。多头（Multi-Head）只是把 Q/K/V 切成多组并行计算后拼回。</p>
+
+  <h3>前向与反向：推理只有前向</h3>
+  <p><strong>前向传播（Forward）</strong>是数据从 Embedding 一路算到 logits 的过程，训练和推理都有；<strong>反向传播（Backward）</strong>从损失 Loss 倒推梯度、更新权重，只在训练存在。<strong>推理阶段权重固定、只有前向、不断预测下一个 token</strong>，不更新任何参数。</p>
+
+  <h3>推理干净地切成两阶段：Prefill 与 Decode</h3>
+  <figure class="fig">
+    <svg viewBox="0 0 900 340" role="img" aria-label="Prefill 与 Decode 两阶段流程">
+      <defs><marker id="ar1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit">
+        <!-- prompt -->
+        <rect x="30" y="130" width="120" height="64" rx="10" fill="#e7eff9" stroke="#c9dcee"/>
+        <text x="90" y="158" text-anchor="middle" font-size="14" font-weight="700" fill="#16233a">Prompt</text>
+        <text x="90" y="178" text-anchor="middle" font-size="11.5" fill="#697a92">L 个 token</text>
+        <line x1="150" y1="162" x2="186" y2="162" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar1)"/>
+        <!-- prefill -->
+        <rect x="190" y="110" width="180" height="104" rx="12" fill="#23456f"/>
+        <text x="280" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">① Prefill</text>
+        <text x="280" y="166" text-anchor="middle" font-size="12" fill="#cfe0f2">一次性并行前向</text>
+        <text x="280" y="186" text-anchor="middle" font-size="12" fill="#cfe0f2">算全部 K/V 并缓存</text>
+        <text x="280" y="206" text-anchor="middle" font-size="11" fill="#8fb4d8">Compute-Bound</text>
+        <line x1="370" y1="162" x2="406" y2="162" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar1)"/>
+        <!-- KV cache -->
+        <rect x="410" y="120" width="150" height="84" rx="12" fill="#0d9488"/>
+        <text x="485" y="156" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">KV Cache</text>
+        <text x="485" y="180" text-anchor="middle" font-size="11.5" fill="#d4ece9">逐层 K / V 缓存</text>
+        <text x="485" y="198" text-anchor="middle" font-size="11" fill="#bfe0db">随生成不断追加 ↓</text>
+        <line x1="560" y1="162" x2="596" y2="162" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar1)"/>
+        <!-- decode -->
+        <rect x="600" y="110" width="180" height="104" rx="12" fill="#b9832b"/>
+        <text x="690" y="142" text-anchor="middle" font-size="16" font-weight="700" fill="#fff">② Decode</text>
+        <text x="690" y="166" text-anchor="middle" font-size="12" fill="#f6ead2">输入 1 个新 token</text>
+        <text x="690" y="186" text-anchor="middle" font-size="12" fill="#f6ead2">读 KV，出下一个 token</text>
+        <text x="690" y="206" text-anchor="middle" font-size="11" fill="#ecd9b4">Memory-Bound</text>
+        <!-- decode loop arrow -->
+        <path d="M690,214 L690,262 Q690,278 674,278 L485,278 Q470,278 470,262 L470,208" fill="none" stroke="#b9832b" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar1)"/>
+        <text x="580" y="272" text-anchor="middle" font-size="12" fill="#b9832b">循环：每步追加 K/V，直到结束</text>
+        <!-- output -->
+        <line x1="780" y1="162" x2="816" y2="162" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar1)"/>
+        <rect x="820" y="130" width="64" height="64" rx="10" fill="#e8590c"/>
+        <text x="852" y="160" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">token</text>
+        <text x="852" y="180" text-anchor="middle" font-size="11" fill="#fde2d2">流式输出</text>
+      </g>
+    </svg>
+    <figcaption><b>图 3</b><span>推理两阶段：<strong>Prefill</strong> 一次性并行处理整个 prompt 并生成 KV Cache（算力受限）；<strong>Decode</strong> 逐 token 自回归生成、反复读取 KV（带宽受限），每步把新 K/V 追加进缓存。</span></figcaption>
+  </figure>
+
+  <h4>为什么 Decode 每次只输入 1 个 token？</h4>
+  <p>不是硬件强制，而是<strong>自回归逻辑 + KV Cache 设计</strong>的自然结果：Prefill 已把全部历史 K/V 存好，Decode 时“新信息”只有刚生成的那 1 个 token，所以本轮的 Q 只有 1 个；它用这 1 个 Q 去和缓存里全部历史 K/V 打分，采样出下一个 token，再把这 1 个 token 的 K/V 追加进缓存。第 $N$ 个 token 无法提前知道第 $N+1$ 个，只能逐步进行。</p>
+
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:18%"><col style="width:41%"><col style="width:41%"></colgroup>
+      <thead><tr><th>对比项</th><th>Prefill（提示填充）</th><th>Decode（逐 token 生成）</th></tr></thead>
+      <tbody>
+        <tr><td>输入</td><td>整个 prompt，$L$ 个 token 一次进</td><td>每次仅 1 个新 token</td></tr>
+        <tr><td>并行度</td><td>高，所有 token 并行矩阵乘</td><td>低，序列维度并行度为 1</td></tr>
+        <tr><td>瓶颈类型</td><td><span class="tag t-blue">Compute-Bound</span> 算力受限，利用率可达 ~95%</td><td><span class="tag t-orange">Memory-Bound</span> 带宽受限，利用率可低至 ~12%</td></tr>
+        <tr><td>主要开销</td><td>大量 GEMM 矩阵运算</td><td>反复读取全部权重 + 全部 KV Cache</td></tr>
+        <tr><td>对应指标</td><td>决定 TTFT（首 token 时延）</td><td>决定 ITL（token 间时延）</td></tr>
+        <tr><td>优化抓手</td><td>FlashAttention、张量并行、量化</td><td>PagedAttention、减 KV 访存、PD 分离、投机解码</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout c-blue"><span class="ct">关键认知</span><p>Prefill 和 Decode 的瓶颈完全不同——<strong>一个拼算力、一个拼带宽</strong>。这是后面所有优化（包括 PD 分离）成立的根本原因。</p></div>
+</section>
+<!-- ================= 第 2 章 ================= -->
+<section id="ch2" class="wrap">
+  <div class="sec-head"><span class="sec-no">02</span><h2>KV Cache：推理加速第一性原理</h2><span class="sub">KV CACHE</span></div>
+
+  <p>如果只记住一个推理优化，那就是 KV Cache。它的思想极其朴素：<strong>把已经算过的历史 token 的 K、V 存起来，新 token 只算自己的 Q，直接复用旧 K/V</strong>，从而把每步“重算全部历史”的开销砍掉。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 290" role="img" aria-label="有无 KV Cache 的计算量对比">
+      <g font-family="inherit">
+        <!-- divider -->
+        <line x1="450" y1="20" x2="450" y2="250" stroke="#d7dee8" stroke-dasharray="5 5"/>
+        <!-- left: no cache -->
+        <text x="225" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#16233a">无 KV Cache：每步重算全部历史</text>
+        <text x="225" y="66" text-anchor="middle" font-size="22" font-weight="800" fill="#e8590c" font-family="JetBrains Mono">O(n²)</text>
+        <g>
+          <rect x="70" y="186" width="42" height="24" rx="4" fill="#f0a983"/><text x="91" y="203" text-anchor="middle" font-size="11" fill="#7a3a14">1</text>
+          <rect x="130" y="162" width="42" height="48" rx="4" fill="#ec8d58"/><text x="151" y="190" text-anchor="middle" font-size="11" fill="#fff">2</text>
+          <rect x="190" y="138" width="42" height="72" rx="4" fill="#e87438"/><text x="211" y="178" text-anchor="middle" font-size="11" fill="#fff">3</text>
+          <rect x="250" y="114" width="42" height="96" rx="4" fill="#e35d20"/><text x="271" y="166" text-anchor="middle" font-size="11" fill="#fff">4</text>
+          <rect x="310" y="90" width="42" height="120" rx="4" fill="#d7541a"/><text x="331" y="154" text-anchor="middle" font-size="11" fill="#fff">5</text>
+          <line x1="60" y1="210" x2="370" y2="210" stroke="#94a3b8"/>
+          <text x="225" y="240" text-anchor="middle" font-size="12" fill="#697a92">第 $k$ 步要算 $k$ 个 token，总量 $1+2+\dots+n$</text>
+        </g>
+        <!-- right: cache -->
+        <text x="675" y="38" text-anchor="middle" font-size="14" font-weight="700" fill="#16233a">有 KV Cache：每步只算 1 个新 token</text>
+        <text x="675" y="66" text-anchor="middle" font-size="22" font-weight="800" fill="#0d9488" font-family="JetBrains Mono">O(n)</text>
+        <g>
+          <rect x="520" y="186" width="42" height="24" rx="4" fill="#0d9488"/><text x="541" y="203" text-anchor="middle" font-size="11" fill="#fff">1</text>
+          <rect x="580" y="186" width="42" height="24" rx="4" fill="#0d9488"/><text x="601" y="203" text-anchor="middle" font-size="11" fill="#fff">1</text>
+          <rect x="640" y="186" width="42" height="24" rx="4" fill="#0d9488"/><text x="661" y="203" text-anchor="middle" font-size="11" fill="#fff">1</text>
+          <rect x="700" y="186" width="42" height="24" rx="4" fill="#0d9488"/><text x="721" y="203" text-anchor="middle" font-size="11" fill="#fff">1</text>
+          <rect x="760" y="186" width="42" height="24" rx="4" fill="#0d9488"/><text x="781" y="203" text-anchor="middle" font-size="11" fill="#fff">1</text>
+          <line x1="510" y1="210" x2="820" y2="210" stroke="#94a3b8"/>
+          <text x="675" y="240" text-anchor="middle" font-size="12" fill="#697a92">历史 K/V 直接复用，每步恒定只算新 Q</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption><b>图 4</b><span>KV Cache 把单请求解码的注意力计算量从 $O(n^2)$ 降到 $O(n)$：左图每步计算量随序列线性增长，右图每步恒定。代价是要用显存存放历史 K/V，序列越长占用越高。</span></figcaption>
+  </figure>
+
+  <h3>为什么只缓存 K、V，从不缓存 Q？</h3>
+  <p>这来自注意力结构的<strong>根本不对称</strong>：</p>
+  <ul>
+    <li>$K$、$V$ 是<strong>历史 token 的表示</strong>，一旦算好就不再改变，后续每一步都要反复使用——天然值得缓存。</li>
+    <li>$Q$ 是<strong>“当前这一步”的查询</strong>，只在当前位置、当前这一次注意力里使用，用完即弃；下一步的新 token 会产生全新的 Q。缓存 Q 没有任何复用价值，反而白占显存。</li>
+  </ul>
+  <p>一句话：<strong>K/V 面向过去、可复用；Q 面向当下、一次性</strong>。所以 KV Cache 里永远只有 K 和 V。</p>
+
+  <h3>KV Cache 显存，一个公式算清</h3>
+  <div class="formula-box">$$\mathrm{KV}_{\text{bytes}}=2\times n_{\text{kv}}\times d_{\text{head}}\times L\times s\times b_{\text{size}}\times \underbrace{b}_{\text{每元素字节}}$$</div>
+  <ul>
+    <li><strong>$2$</strong>：K 和 V 两份，最容易漏；</li>
+    <li><strong>$n_{\text{kv}}$</strong>：<strong>KV 头数</strong>（GQA/MQA 用它，不是 Query 头数！Q 头再多也不影响 KV 大小）；</li>
+    <li><strong>$d_{\text{head}}$</strong>：单头维度，Llama/Qwen 系列一般为 $128$；</li>
+    <li><strong>$L$</strong>：模型层数；<strong>$s$</strong>：序列总长度（prompt + 生成）；<strong>$b_{\text{size}}$</strong>：并发 batch；</li>
+    <li><strong>$b$</strong>：每元素字节，BF16/FP16 = 2，FP8/INT8 = 1。</li>
+  </ul>
+  <div class="callout c-gold"><span class="ct">易错三连</span><p>① GQA 必须用 <strong>KV 头数</strong>而非 Q 头数；② 不要漏 K+V 的系数 <strong>2</strong>；③ KV Cache 显存 ≠ 模型权重显存，二者要分开估算再相加。</p></div>
+  <h3>从头数减少：MHA → GQA → MQA</h3>
+  <p>KV Cache 大小正比于 KV 头数，于是模型侧最直接的演进就是<strong>减少 KV 头、让多个 Q 头共享同一组 K/V</strong>：</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 250" role="img" aria-label="MHA GQA MQA 头结构对比">
+      <g font-family="inherit" text-anchor="middle">
+        <!-- titles -->
+        <text x="150" y="34" font-size="14" font-weight="700" fill="#16233a">MHA · 每 Q 独享 KV</text>
+        <text x="450" y="34" font-size="14" font-weight="700" fill="#16233a">GQA · 多 Q 共享（主流）</text>
+        <text x="750" y="34" font-size="14" font-weight="700" fill="#16233a">MQA · 全局共享 1 组</text>
+        <!-- connectors -->
+        <g stroke="#b9c6d6" stroke-width="1.4">
+          <!-- MHA -->
+          <line x1="81" y1="98" x2="81" y2="150"/><line x1="127" y1="98" x2="127" y2="150"/>
+          <line x1="173" y1="98" x2="173" y2="150"/><line x1="219" y1="98" x2="219" y2="150"/>
+          <!-- GQA -->
+          <line x1="381" y1="98" x2="404" y2="150"/><line x1="427" y1="98" x2="404" y2="150"/>
+          <line x1="473" y1="98" x2="496" y2="150"/><line x1="519" y1="98" x2="496" y2="150"/>
+          <!-- MQA -->
+          <line x1="681" y1="98" x2="750" y2="150"/><line x1="727" y1="98" x2="750" y2="150"/>
+          <line x1="773" y1="98" x2="750" y2="150"/><line x1="819" y1="98" x2="750" y2="150"/>
+        </g>
+        <!-- Q heads -->
+        <g>
+          <!-- MHA Q -->
+          <g fill="#2f6fb0">
+            <rect x="64" y="72" width="34" height="26" rx="5"/><rect x="110" y="72" width="34" height="26" rx="5"/>
+            <rect x="156" y="72" width="34" height="26" rx="5"/><rect x="202" y="72" width="34" height="26" rx="5"/>
+          </g>
+          <g fill="#fff" font-size="12">
+            <text x="81" y="90">Q</text><text x="127" y="90">Q</text><text x="173" y="90">Q</text><text x="219" y="90">Q</text>
+          </g>
+          <!-- GQA Q -->
+          <g fill="#2f6fb0">
+            <rect x="364" y="72" width="34" height="26" rx="5"/><rect x="410" y="72" width="34" height="26" rx="5"/>
+            <rect x="456" y="72" width="34" height="26" rx="5"/><rect x="502" y="72" width="34" height="26" rx="5"/>
+          </g>
+          <g fill="#fff" font-size="12">
+            <text x="381" y="90">Q</text><text x="427" y="90">Q</text><text x="473" y="90">Q</text><text x="519" y="90">Q</text>
+          </g>
+          <!-- MQA Q -->
+          <g fill="#2f6fb0">
+            <rect x="664" y="72" width="34" height="26" rx="5"/><rect x="710" y="72" width="34" height="26" rx="5"/>
+            <rect x="756" y="72" width="34" height="26" rx="5"/><rect x="802" y="72" width="34" height="26" rx="5"/>
+          </g>
+          <g fill="#fff" font-size="12">
+            <text x="681" y="90">Q</text><text x="727" y="90">Q</text><text x="773" y="90">Q</text><text x="819" y="90">Q</text>
+          </g>
+        </g>
+        <!-- KV -->
+        <g fill="#0d9488">
+          <rect x="64" y="150" width="34" height="30" rx="5"/><rect x="110" y="150" width="34" height="30" rx="5"/>
+          <rect x="156" y="150" width="34" height="30" rx="5"/><rect x="202" y="150" width="34" height="30" rx="5"/>
+          <rect x="381" y="150" width="46" height="30" rx="5"/><rect x="473" y="150" width="46" height="30" rx="5"/>
+          <rect x="720" y="150" width="60" height="30" rx="5"/>
+        </g>
+        <g fill="#fff" font-size="12">
+          <text x="81" y="170">KV</text><text x="127" y="170">KV</text><text x="173" y="170">KV</text><text x="219" y="170">KV</text>
+          <text x="404" y="170">KV</text><text x="496" y="170">KV</text><text x="750" y="170">KV</text>
+        </g>
+        <!-- notes -->
+        <text x="150" y="218" font-size="12" fill="#697a92">KV Cache 最大（基准 1.0×）</text>
+        <text x="450" y="218" font-size="12" fill="#697a92">Llama3-70B：Q 64 / KV 8，缓存降至 1/8</text>
+        <text x="750" y="218" font-size="12" fill="#697a92">KV 最小，质量略损</text>
+      </g>
+    </svg>
+    <figcaption><b>图 5</b><span>MHA 中每个 Q 头有专属 K/V；GQA 将多个 Q 头分组共享 K/V（Llama2/3、Qwen 主流）；MQA 所有 Q 头全局共用 1 组 K/V。KV Cache 只与 KV 头数有关。</span></figcaption>
+  </figure>
+
+  <div class="paper"><span class="pid">MQA</span><div><div class="ptitle">Fast Transformer Decoding: One Write-Head is All You Need</div><div class="pinfo">Noam Shazeer · 2019 · 首次提出多查询注意力，所有 Q 共享一组 K/V</div></div><a href="https://arxiv.org/abs/1911.02150">arXiv:1911.02150</a></div>
+  <div class="paper"><span class="pid">GQA</span><div><div class="ptitle">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</div><div class="pinfo">Ainslie et al. · Google · EMNLP 2023 · MHA 与 MQA 的折中，可从 MHA checkpoint 训练</div></div><a href="https://arxiv.org/abs/2305.13245">arXiv:2305.13245</a></div>
+
+  <h3>从维度压缩：MLA 多头潜在注意力</h3>
+  <p>GQA/MQA 减的是 KV <strong>头的数量</strong>；DeepSeek 提出的 <strong>MLA（Multi-head Latent Attention）</strong>走另一条路——<strong>把 K、V 向量本身通过低秩投影压缩成更小的潜向量（latent），缓存里只存这个潜向量，Decode 时再投影还原</strong>。KV 头数量不变，但每个 token 缓存体积大幅下降。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 215" role="img" aria-label="MLA 压缩与还原">
+      <defs><marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit" text-anchor="middle">
+        <rect x="40" y="60" width="180" height="96" rx="12" fill="#23456f"/>
+        <text x="130" y="100" font-size="15" font-weight="700" fill="#fff">原始高维 K/V</text>
+        <text x="130" y="126" font-size="12" fill="#cfe0f2">每头 128 维</text>
+        <text x="130" y="146" font-size="11" fill="#8fb4d8">GQA：直接存这一份</text>
+        <line x1="220" y1="108" x2="296" y2="108" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar2)"/>
+        <text x="258" y="96" font-size="11.5" fill="#0d9488" font-weight="700">压缩 Down</text>
+        <rect x="300" y="78" width="150" height="60" rx="12" fill="#0d9488"/>
+        <text x="375" y="106" font-size="15" font-weight="700" fill="#fff">潜向量 c_KV</text>
+        <text x="375" y="128" font-size="11.5" fill="#d4ece9">低维（如 128 → 更小）</text>
+        <rect x="288" y="150" width="174" height="24" rx="8" fill="#e2f1ef" stroke="#bfe0db"/>
+        <text x="375" y="167" font-size="11.5" fill="#0d9488" font-weight="700">↑ KV Cache 实际只存这一份</text>
+        <line x1="450" y1="108" x2="526" y2="108" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar2)"/>
+        <text x="488" y="96" font-size="11.5" fill="#b9832b" font-weight="700">还原 Up</text>
+        <rect x="530" y="60" width="180" height="96" rx="12" fill="#23456f"/>
+        <text x="620" y="100" font-size="15" font-weight="700" fill="#fff">投影还原 K/V</text>
+        <text x="620" y="126" font-size="12" fill="#cfe0f2">Decode 时算注意力</text>
+        <text x="620" y="146" font-size="11" fill="#8fb4d8">精度近无损</text>
+        <text x="762" y="100" font-size="12" fill="#697a92" text-anchor="start">不同模型实测（BF16）：</text>
+        <text x="762" y="122" font-size="11.5" fill="#e8590c" font-weight="700" text-anchor="start">Qwen3-30B GQA ≈ 96KB/字</text>
+        <text x="762" y="142" font-size="11.5" fill="#0d9488" font-weight="700" text-anchor="start">V2 MLA：较 MHA −93.3%</text>
+        <text x="762" y="162" font-size="11.5" fill="#0d9488" font-weight="700" text-anchor="start">128K 上下文 KV ≈ 8.4GB</text>
+      </g>
+    </svg>
+    <figcaption><b>图 6</b><span>MLA：Prefill 用可学习投影把高维 K/V 编码为低维潜向量，缓存只存潜向量；Decode 再投影还原。压缩/还原矩阵随模型一起训练，注意力精度近无损（DeepSeek-V2/V3）。</span></figcaption>
+  </figure>
+  <div class="paper"><span class="pid">MLA</span><div><div class="ptitle">DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</div><div class="pinfo">DeepSeek-AI · 2024 · 首次提出 MLA 多头潜在注意力，配合 MLA 大幅压缩 KV Cache</div></div><a href="https://arxiv.org/abs/2405.04434">arXiv:2405.04434</a></div>
+  <h3>三个主流模型，代入公式实算</h3>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:21%"><col style="width:27%"><col style="width:22%"><col style="width:30%"></colgroup>
+      <thead><tr><th>模型（BF16）</th><th>结构：层数 / Q头·KV头 / d</th><th>单 token KV</th><th>典型上下文 KV 占用</th></tr></thead>
+      <tbody>
+        <tr><td>Qwen3-30B-A3B</td><td>48 层 / 32 · 4 / 128（GQA）</td><td>$2{\times}48{\times}4{\times}128{\times}2$ = <b>96 KiB</b></td><td>16K ≈ <b>1.5 GiB</b>；128K ≈ 12 GiB</td></tr>
+        <tr><td>Llama3-70B</td><td>80 层 / 64 · 8 / 128（GQA）</td><td>$2{\times}80{\times}8{\times}128{\times}2$ = <b>320 KiB</b></td><td>32K ≈ 10 GiB；128K ≈ <b>43 GiB</b></td></tr>
+        <tr><td>DeepSeek-V2（MLA）</td><td>60 层 / kv_lora_rank 512（潜变量）</td><td>只存 512 维潜向量 + RoPE 部分</td><td>128K ≈ <b>8.4 GiB</b>，较 MHA 压缩 93.3%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <small class="note">口径：KiB/GiB 按 1024 换算；KV 为单请求、单并发，在线上还要乘以并发 batch。Qwen3-30B 为 MoE（总参 30.5B、单 token 激活 3.3B），但 KV Cache 只与注意力结构有关，与 MoE 无关。</small>
+
+  <h3>推理时显存到底被谁占了</h3>
+  <div class="formula-box">$$\text{GPU 显存总占用}\ \approx\ \underbrace{P\times b}_{\text{模型权重}}+\underbrace{\mathrm{KV}_{\text{bytes}}}_{\text{KV Cache}}+\underbrace{A}_{\text{激活/中间张量}}+\text{碎片}$$</div>
+  <ul>
+    <li><strong>模型权重</strong>：参数量 $P$ × 每参数字节。BF16/FP16 = 2B/参数，FP8 = 1B，INT4 ≈ 0.5B。如 7B BF16 ≈ <b>14 GiB</b>，70B BF16 ≈ <b>140 GiB</b>——这部分常驻、不随上下文变化。</li>
+    <li><strong>KV Cache</strong>：随并发数与序列长度<strong>线性增长</strong>，是长上下文、高并发场景下最容易爆显存的部分，也是调度要重点管理的对象。</li>
+    <li><strong>激活 $A$</strong>：推理时主要是 Prefill 的中间张量，相对权重小得多，Decode 阶段几乎可忽略。</li>
+  </ul>
+
+  <h3>一个隐蔽工程坑：左填充与位置编码</h3>
+  <figure class="fig">
+    <svg viewBox="0 0 900 252" role="img" aria-label="左填充与右填充的位置编码差异">
+      <g font-family="inherit" text-anchor="middle" font-size="11">
+        <!-- index headers top -->
+        <g fill="#94a3b8"><text x="197" y="42">0</text><text x="233" y="42">1</text><text x="269" y="42">2</text><text x="305" y="42">3</text><text x="341" y="42">4</text><text x="377" y="42">5</text><text x="413" y="42">6</text><text x="449" y="42">7</text></g>
+        <!-- right padding label -->
+        <text x="30" y="70" text-anchor="start" font-size="13" font-weight="700" fill="#16233a">右填充</text>
+        <text x="30" y="88" text-anchor="start" font-size="10.5" fill="#94a3b8">Right</text>
+        <!-- r1 -->
+        <g>
+          <rect x="180" y="50" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="197" y="67" fill="#16233a">A</text>
+          <rect x="216" y="50" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="233" y="67" fill="#16233a">B</text>
+          <rect x="252" y="50" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="269" y="67" fill="#16233a">C</text>
+          <rect x="288" y="50" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="305" y="67" fill="#16233a">D</text>
+          <rect x="324" y="50" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="341" y="67" fill="#16233a">E</text>
+          <rect x="360" y="50" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="377" y="67" fill="#16233a">F</text>
+          <rect x="396" y="50" width="34" height="26" rx="4" fill="#fdeee2" stroke="#e8590c"/><text x="413" y="67" fill="#e8590c">P</text>
+          <rect x="432" y="50" width="34" height="26" rx="4" fill="#eef1f5"/><text x="449" y="67" fill="#a8b4c2">P</text>
+        </g>
+        <!-- r2 -->
+        <g>
+          <rect x="180" y="84" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="197" y="101" fill="#16233a">X</text>
+          <rect x="216" y="84" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="233" y="101" fill="#16233a">Y</text>
+          <rect x="252" y="84" width="34" height="26" rx="4" fill="#e2f1ef" stroke="#0d9488" stroke-dasharray="3 2"/><text x="269" y="101" fill="#0d9488">应写</text>
+          <rect x="288" y="84" width="34" height="26" rx="4" fill="#eef1f5"/><text x="305" y="101" fill="#a8b4c2">P</text>
+          <rect x="324" y="84" width="34" height="26" rx="4" fill="#eef1f5"/><text x="341" y="101" fill="#a8b4c2">P</text>
+          <rect x="360" y="84" width="34" height="26" rx="4" fill="#eef1f5"/><text x="377" y="101" fill="#a8b4c2">P</text>
+          <rect x="396" y="84" width="34" height="26" rx="4" fill="#fbe4dd" stroke="#d7541a"/><text x="413" y="101" fill="#d7541a" font-weight="700">误写</text>
+          <rect x="432" y="84" width="34" height="26" rx="4" fill="#eef1f5"/><text x="449" y="101" fill="#a8b4c2">P</text>
+        </g>
+        <text x="480" y="62" text-anchor="start" font-size="11.5" fill="#16233a">样本1 长度 6，下一位置 = 6，正常</text>
+        <text x="480" y="92" text-anchor="start" font-size="11.5" fill="#d7541a">样本2 长度 2，应写位置 2</text>
+        <text x="480" y="110" text-anchor="start" font-size="11.5" fill="#d7541a" font-weight="700">批量对齐却写到位置 6（PAD）→ 静默出错</text>
+
+        <line x1="30" y1="128" x2="870" y2="128" stroke="#d7dee8"/>
+        <!-- index headers bottom -->
+        <g fill="#94a3b8"><text x="197" y="146">0</text><text x="233" y="146">1</text><text x="269" y="146">2</text><text x="305" y="146">3</text><text x="341" y="146">4</text><text x="377" y="146">5</text><text x="413" y="146">6</text><text x="449" y="146">7</text></g>
+        <text x="30" y="174" text-anchor="start" font-size="13" font-weight="700" fill="#16233a">左填充</text>
+        <text x="30" y="192" text-anchor="start" font-size="10.5" fill="#94a3b8">Left</text>
+        <!-- r1 -->
+        <g>
+          <rect x="180" y="154" width="34" height="26" rx="4" fill="#eef1f5"/><text x="197" y="171" fill="#a8b4c2">P</text>
+          <rect x="216" y="154" width="34" height="26" rx="4" fill="#eef1f5"/><text x="233" y="171" fill="#a8b4c2">P</text>
+          <rect x="252" y="154" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="269" y="171" fill="#16233a">A</text>
+          <rect x="288" y="154" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="305" y="171" fill="#16233a">B</text>
+          <rect x="324" y="154" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="341" y="171" fill="#16233a">C</text>
+          <rect x="360" y="154" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="377" y="171" fill="#16233a">D</text>
+          <rect x="396" y="154" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="413" y="171" fill="#16233a">E</text>
+          <rect x="432" y="154" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="449" y="171" fill="#16233a">F</text>
+        </g>
+        <!-- r2 -->
+        <g>
+          <rect x="180" y="188" width="34" height="26" rx="4" fill="#eef1f5"/><text x="197" y="205" fill="#a8b4c2">P</text>
+          <rect x="216" y="188" width="34" height="26" rx="4" fill="#eef1f5"/><text x="233" y="205" fill="#a8b4c2">P</text>
+          <rect x="252" y="188" width="34" height="26" rx="4" fill="#eef1f5"/><text x="269" y="205" fill="#a8b4c2">P</text>
+          <rect x="288" y="188" width="34" height="26" rx="4" fill="#eef1f5"/><text x="305" y="205" fill="#a8b4c2">P</text>
+          <rect x="324" y="188" width="34" height="26" rx="4" fill="#eef1f5"/><text x="341" y="205" fill="#a8b4c2">P</text>
+          <rect x="360" y="188" width="34" height="26" rx="4" fill="#eef1f5"/><text x="377" y="205" fill="#a8b4c2">P</text>
+          <rect x="396" y="188" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="413" y="205" fill="#16233a">X</text>
+          <rect x="432" y="188" width="34" height="26" rx="4" fill="#e7eff9" stroke="#c9dcee"/><text x="449" y="205" fill="#16233a">Y</text>
+        </g>
+        <!-- next index 8 -->
+        <rect x="468" y="154" width="26" height="26" rx="4" fill="#0d9488"/><text x="481" y="171" fill="#fff" font-weight="700">8</text>
+        <rect x="468" y="188" width="26" height="26" rx="4" fill="#0d9488"/><text x="481" y="205" fill="#fff" font-weight="700">8</text>
+        <text x="510" y="168" text-anchor="start" font-size="11.5" fill="#16233a">两样本真实结尾都对齐 index 7</text>
+        <text x="510" y="202" text-anchor="start" font-size="11.5" fill="#0d9488" font-weight="700">下一 token 统一写 index 8，编码一致</text>
+      </g>
+    </svg>
+    <figcaption><b>图 7</b><span>右填充时不同长度样本的“下一位置”错位，批量解码可能把新 token 写到 PAD 位置、位置编码错乱且不报错；左填充把 PAD 前置、真实结尾对齐即可避免。现代框架用动态 mask + 自动位置管理已能正确处理，这也是早期手写推理最常见的静默 bug。</span></figcaption>
+  </figure>
+  <p>顺带一提：<strong>训练用右填充</strong>（标签左对齐、符合因果掩码习惯），<strong>早期推理用左填充</strong>（保证真实 token 右对齐、位置一致）；这不是硬性规定，而是框架与因果掩码约定下的工程惯例。</p>
+</section>
+<!-- ================= 第 3 章 ================= -->
+<section id="ch3" class="wrap">
+  <div class="sec-head"><span class="sec-no">03</span><h2>显存墙、Roofline 与 FlashAttention</h2><span class="sub">MEMORY WALL · KERNEL</span></div>
+
+  <h3>先看清 GPU 的存储层级</h3>
+  <p>GPU 不是一块“均匀的大内存”，而是一个<strong>越靠近计算核心越快、但容量越小</strong>的层级结构。数据在不同层级之间搬运的速度，往往才是推理的真正瓶颈。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 330" role="img" aria-label="GPU 存储层级金字塔">
+      <g font-family="inherit" text-anchor="middle">
+        <!-- bands centered 450 -->
+        <g>
+          <rect x="340" y="14" width="220" height="50" rx="8" fill="#16233a"/>
+          <text x="450" y="36" font-size="14" font-weight="700" fill="#fff">寄存器 Register</text>
+          <text x="450" y="55" font-size="11" fill="#9fb6d2">数十 TB/s · 256KB/SM</text>
+        </g>
+        <g>
+          <rect x="270" y="70" width="360" height="50" rx="8" fill="#23456f"/>
+          <text x="450" y="92" font-size="14" font-weight="700" fill="#fff">片上 SRAM（L1 / Shared Memory）</text>
+          <text x="450" y="111" font-size="11" fill="#b9d0e8">TB/s 级 · ~228KB/SM</text>
+        </g>
+        <g>
+          <rect x="200" y="126" width="500" height="50" rx="8" fill="#0d9488"/>
+          <text x="450" y="148" font-size="14" font-weight="700" fill="#fff">HBM3 显存</text>
+          <text x="450" y="167" font-size="11.5" fill="#d4ece9">3.35 TB/s · 80 GB（H100）</text>
+        </g>
+        <g>
+          <rect x="130" y="182" width="640" height="50" rx="8" fill="#2f6fb0"/>
+          <text x="450" y="204" font-size="14" font-weight="700" fill="#fff">主机 DRAM（DDR5）</text>
+          <text x="450" y="223" font-size="11.5" fill="#d6e5f4">~50 GB/s（0.05 TB/s）· 数百 GB–2TB</text>
+        </g>
+        <g>
+          <rect x="70" y="238" width="760" height="50" rx="8" fill="#7c8aa0"/>
+          <text x="450" y="260" font-size="14" font-weight="700" fill="#fff">NVMe SSD / 远端存储</text>
+          <text x="450" y="279" font-size="11.5" fill="#eef2f7">~7 GB/s · 数 TB（需经 CPU/PCIe 搬运）</text>
+        </g>
+        <text x="40" y="40" text-anchor="start" font-size="12" fill="#0d9488" font-weight="700">快 / 小</text>
+        <text x="40" y="270" text-anchor="start" font-size="12" fill="#7c8aa0" font-weight="700">慢 / 大</text>
+        <text x="860" y="40" text-anchor="end" font-size="11" fill="#697a92">离计算核心越近</text>
+        <text x="860" y="270" text-anchor="end" font-size="11" fill="#697a92">离计算核心越远</text>
+      </g>
+    </svg>
+    <figcaption><b>图 8</b><span>GPU 存储层级：片上寄存器/SRAM 带宽极高但以 KB 计；HBM 是模型权重与 KV Cache 的主阵地（H100 3.35TB/s、80GB）；再往下到主机 DRAM、SSD，带宽断崖式下降。</span></figcaption>
+  </figure>
+
+  <h3>显存墙：算得快，搬得慢</h3>
+  <p>当一次计算的<strong>算术强度（Arithmetic Intensity，每搬运 1 字节能做多少次浮点运算，FLOPs/Byte）很低</strong>时，计算单元会大量空转等数据，这就是 Memory-Bound。Decode 阶段每个 token 要把<strong>全部权重 + 全部 KV Cache 从 HBM 读一遍，却只做约 2 倍参数量的运算</strong>，算术强度极低，因此被显存带宽死死卡住。</p>
+
+  <h3>Roofline：一张图判断瓶颈在算力还是带宽</h3>
+  <figure class="fig">
+    <svg viewBox="0 0 900 300" role="img" aria-label="Roofline 模型与 Prefill Decode 落点">
+      <g font-family="inherit">
+        <!-- axes -->
+        <line x1="90" y1="250" x2="830" y2="250" stroke="#3c4d66" stroke-width="1.6"/>
+        <line x1="90" y1="30" x2="90" y2="250" stroke="#3c4d66" stroke-width="1.6"/>
+        <!-- gridline/ticks x: 1,10,100,1000 -->
+        <g font-size="10.5" fill="#697a92" text-anchor="middle">
+          <text x="181" y="266">1</text><text x="364" y="266">10</text><text x="546" y="266">100</text><text x="729" y="266">1000</text>
+        </g>
+        <g font-size="10.5" fill="#697a92" text-anchor="end">
+          <text x="84" y="254">1</text><text x="84" y="190">10</text><text x="84" y="126">100</text><text x="84" y="62">1000</text>
+        </g>
+        <text x="460" y="290" text-anchor="middle" font-size="12.5" fill="#3c4d66">算术强度 I（FLOPs / Byte，对数轴）</text>
+        <text x="30" y="140" text-anchor="middle" font-size="12.5" fill="#3c4d66" transform="rotate(-90 30 140)">性能（TFLOPS，对数）</text>
+        <!-- HBM sloped roof: (86,250) -> (632,69) -->
+        <line x1="86" y1="250" x2="632" y2="69" stroke="#0d9488" stroke-width="3"/>
+        <!-- compute flat roof -->
+        <line x1="632" y1="69" x2="828" y2="69" stroke="#e8590c" stroke-width="3"/>
+        <text x="700" y="58" font-size="12" fill="#e8590c" font-weight="700">算力屋顶 989 TFLOPS</text>
+        <text x="250" y="120" font-size="12" fill="#0d9488" font-weight="700" transform="rotate(-24 250 120)">带宽屋顶 = 3.35 TB/s × I</text>
+        <text x="632" y="92" text-anchor="middle" font-size="11" fill="#3c4d66">脊点 I*≈295</text>
+        <!-- Decode point (213,208) -->
+        <circle cx="213" cy="208" r="7" fill="#e8590c"/>
+        <text x="226" y="200" text-anchor="start" font-size="12" fill="#e8590c" font-weight="700">Decode I≈1.5</text>
+        <text x="226" y="216" text-anchor="start" font-size="11" fill="#e8590c">落在斜坡：带宽受限</text>
+        <!-- Prefill point (729,78) -->
+        <circle cx="729" cy="78" r="7" fill="#0d9488"/>
+        <text x="720" y="112" text-anchor="middle" font-size="12" fill="#0d9488" font-weight="700">Prefill I 大</text>
+        <text x="720" y="128" text-anchor="middle" font-size="11" fill="#0d9488">贴近屋顶：算力受限</text>
+      </g>
+    </svg>
+    <figcaption><b>图 9</b><span>Roofline 模型（Williams et al., 2009）：斜屋顶由显存带宽决定（性能 = β·I），平屋顶由峰值算力决定，二者交点为“脊点”。H100 脊点 ≈ 989/3.35 ≈ 295 FLOPs/B。Decode 落在斜坡（带宽受限，约 5 TF/s 量级），Prefill 贴近平顶（算力受限）。</span></figcaption>
+  </figure>
+  <div class="callout c-blue"><span class="ct">用 Roofline 指导优化</span><p>Decode 想提速，要么<strong>减少搬运字节</strong>（量化、压缩/驱逐 KV、减 KV 头），把点往左移的代价抵消；要么<strong>提高算术强度</strong>（多请求拼 batch，让一次搬运服务更多 token）；Prefill 想提速则靠 FlashAttention、张量并行与低精度。</p></div>
+  <h3>FlashAttention：用分块把 N×N 矩阵“焊”在片上</h3>
+  <p>标准注意力要把 $S=QK^\top$、$P=\mathrm{softmax}(S)$、$O=PV$ 等 <strong>$N\times N$ 中间矩阵反复写回 HBM 再读出</strong>，访存量是 $O(N^2)$。FlashAttention 的做法是<strong>算子融合 + 分块（Tiling）+ 在线 Softmax（Online Softmax）</strong>：把 Q/K/V 分块搬进片上 SRAM，在片上连续完成 $QK^\top$、softmax、乘 V，用流式方式逐块更新 softmax 归一化因子，最终输出 $O$ 只写回 HBM 一次，HBM 访存降到 $O(N)$。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 340" role="img" aria-label="FlashAttention 分块与在线 softmax">
+      <defs><marker id="ar3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit">
+        <!-- HBM -->
+        <rect x="50" y="24" width="800" height="118" rx="12" fill="#f3f6fa" stroke="#d7dee8"/>
+        <text x="68" y="46" font-size="12" fill="#697a92" font-family="JetBrains Mono">HBM · 慢、容量大</text>
+        <rect x="80" y="58" width="110" height="56" rx="8" fill="#23456f"/><text x="135" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Q</text>
+        <rect x="205" y="58" width="110" height="56" rx="8" fill="#2f6fb0"/><text x="260" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">K</text>
+        <rect x="330" y="58" width="110" height="56" rx="8" fill="#0d9488"/><text x="385" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">V</text>
+        <rect x="455" y="58" width="110" height="56" rx="8" fill="#b9832b"/><text x="510" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">O（写一次）</text>
+        <rect x="580" y="58" width="250" height="56" rx="8" fill="#fff" stroke="#b9c6d6" stroke-dasharray="5 4"/>
+        <text x="705" y="82" text-anchor="middle" font-size="11.5" fill="#697a92">softmax 归一化因子</text>
+        <text x="705" y="100" text-anchor="middle" font-size="11.5" fill="#e8590c" font-weight="700">不落地 HBM，片上流式更新</text>
+        <!-- arrows -->
+        <line x1="200" y1="146" x2="200" y2="196" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar3)"/>
+        <text x="212" y="176" font-size="11.5" fill="#3c4d66">分块读入</text>
+        <line x1="720" y1="196" x2="720" y2="146" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar3)"/>
+        <text x="630" y="176" font-size="11.5" fill="#3c4d66">O 仅写回一次</text>
+        <!-- SRAM -->
+        <rect x="160" y="200" width="580" height="118" rx="12" fill="#e2f1ef" stroke="#bfe0db"/>
+        <text x="178" y="222" font-size="12" fill="#0d9488" font-family="JetBrains Mono">SRAM · 快、容量小</text>
+        <rect x="185" y="234" width="110" height="62" rx="8" fill="#23456f"/><text x="240" y="270" text-anchor="middle" font-size="12" fill="#fff">Q 块</text>
+        <rect x="310" y="234" width="140" height="62" rx="8" fill="#0d9488"/><text x="380" y="262" text-anchor="middle" font-size="12" fill="#fff">K 块 / V 块</text><text x="380" y="280" text-anchor="middle" font-size="10.5" fill="#d4ece9">循环遍历</text>
+        <rect x="465" y="234" width="260" height="62" rx="8" fill="#fff" stroke="#0d9488"/>
+        <text x="595" y="260" text-anchor="middle" font-size="11.5" fill="#16233a">片上算 QKᵀ · softmax · PV</text>
+        <text x="595" y="280" text-anchor="middle" font-size="11" fill="#0d9488" font-weight="700">online softmax 逐块累积</text>
+        <text x="450" y="334" text-anchor="middle" font-size="12" fill="#3c4d66">数学结果与标准注意力<strong>完全一致（exact / 无损）</strong>，只改变计算顺序与访存路径；HBM 访存由 O(N²) 降为 O(N)</text>
+      </g>
+    </svg>
+    <figcaption><b>图 10</b><span>FlashAttention 的 Tiling：Q/K/V 分块载入 SRAM，片上融合完成注意力与在线 softmax，避免 N×N 矩阵落地 HBM。它与 KV Cache 正交——一个优化 Prefill 的算子访存，一个优化 Decode 的重复计算。</span></figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="paper"><span class="pid">FA1</span><div><div class="ptitle">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</div><div class="pinfo">Dao et al. · NeurIPS 2022 · IO 感知、分块 + 在线 softmax</div></div><a href="https://arxiv.org/abs/2205.14135">arXiv:2205.14135</a></div>
+    <div class="paper"><span class="pid">FA2</span><div><div class="ptitle">FlashAttention-2: Better Parallelism and Work Partitioning</div><div class="pinfo">Tri Dao · 2023 · 约 2× FA1，减少非 matmul 开销</div></div><a href="https://arxiv.org/abs/2307.08691">arXiv:2307.08691</a></div>
+  </div>
+  <div class="paper"><span class="pid">FA3</span><div><div class="ptitle">FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision</div><div class="pinfo">Shah, Bikshandi, Zhang, Thakkar, Ramani, Dao · NeurIPS 2024 · Hopper TMA 异步、Warp 特化、FP8</div></div><a href="https://arxiv.org/abs/2407.08608">arXiv:2407.08608</a></div>
+
+  <h3>量化：直接减少要搬运的字节</h3>
+  <p>Decode 是 Memory-Bound，<strong>把权重/KV 从 BF16 降到 FP8/INT8/INT4，直接把搬运字节减半甚至减到 1/4</strong>，提速立竿见影；代价是引入微小精度损失（属<strong>有损</strong>优化，需校准或少量微调）。</p>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:16%"><col style="width:18%"><col style="width:44%"><col style="width:22%"></colgroup>
+      <thead><tr><th>技术</th><th>作用对象</th><th>方法要点</th><th>典型精度</th></tr></thead>
+      <tbody>
+        <tr><td>SmoothQuant</td><td>权重 + 激活</td><td>把激活的离群值平滑迁移到权重，实现 W8A8 训练后量化</td><td>INT8，近无损</td></tr>
+        <tr><td>GPTQ</td><td>仅权重</td><td>利用二阶 Hessian 信息逐层一键量化，误差补偿</td><td>W4 / W8</td></tr>
+        <tr><td>AWQ</td><td>仅权重</td><td>识别并保护约 1% 显著权重通道（缩放而非直接裁剪）</td><td>W4，部署最广</td></tr>
+        <tr><td>KIVI</td><td>KV Cache</td><td>Key 按通道、Value 按 token 分块非对称量化，无需调参</td><td>2bit 近无损</td></tr>
+        <tr><td>FP8</td><td>权重 + 激活</td><td>Hopper / Blackwell 原生支持，需校准或 QAT</td><td>FP8（E4M3）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="paper sys"><span class="pid">AWQ</span><div><div class="ptitle">AWQ: Activation-aware Weight Quantization for On-Device LLM Compression</div><div class="pinfo">Lin et al. · MLSys 2024</div></div><a href="https://arxiv.org/abs/2306.00978">arXiv:2306.00978</a></div>
+    <div class="paper sys"><span class="pid">KIVI</span><div><div class="ptitle">KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache</div><div class="pinfo">Zhang et al. · ICML 2024</div></div><a href="https://arxiv.org/abs/2402.02750">arXiv:2402.02750</a></div>
+  </div>
+</section>
+<!-- ================= 第 4 章 ================= -->
+<section id="ch4" class="wrap">
+  <div class="sec-head"><span class="sec-no">04</span><h2>服务系统：把 GPU 吞吐打满</h2><span class="sub">SERVING &amp; SCHEDULING</span></div>
+  <p>单请求再快，服务端更关心<strong>一块 GPU 每秒能产出多少 token、同时伺候多少用户</strong>。这一层的核心是<strong>调度粒度</strong>与<strong>显存组织</strong>。</p>
+
+  <h3>Static Batching 的三个痛点</h3>
+  <p>最简单的批处理是凑齐一批请求、同时开始、等整批都生成完再返回、再放下一批。它有三个致命问题：</p>
+  <ul>
+    <li><strong>木桶效应</strong>：整批被最长的请求拖住，短请求早早算完也只能空等；</li>
+    <li><strong>无法动态加入</strong>：新请求必须等上一批全部结束，期间 GPU 槽位空闲；</li>
+    <li><strong>显存按最大长度预留</strong>：内部碎片严重（下一节展开）。</li>
+  </ul>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 300" role="img" aria-label="静态与连续批处理时序对比">
+      <g font-family="inherit">
+        <text x="40" y="30" font-size="13.5" font-weight="700" fill="#16233a">Static Batching</text>
+        <text x="40" y="150" font-size="13.5" font-weight="700" fill="#16233a">Continuous</text>
+        <text x="40" y="166" font-size="11" fill="#697a92">iteration 级调度</text>
+        <!-- static rows, cells start x=140 step30 w28 h22 -->
+        <g>
+          <!-- r1 work5 -->
+          <g fill="#2f6fb0"><rect x="140" y="40" width="28" height="22" rx="3"/><rect x="170" y="40" width="28" height="22" rx="3"/><rect x="200" y="40" width="28" height="22" rx="3"/><rect x="230" y="40" width="28" height="22" rx="3"/><rect x="260" y="40" width="28" height="22" rx="3"/></g>
+          <g fill="#eef1f5"><rect x="290" y="40" width="28" height="22" rx="3"/><rect x="320" y="40" width="28" height="22" rx="3"/><rect x="350" y="40" width="28" height="22" rx="3"/></g>
+          <!-- r2 work7 -->
+          <g fill="#2f6fb0"><rect x="140" y="66" width="28" height="22" rx="3"/><rect x="170" y="66" width="28" height="22" rx="3"/><rect x="200" y="66" width="28" height="22" rx="3"/><rect x="230" y="66" width="28" height="22" rx="3"/><rect x="260" y="66" width="28" height="22" rx="3"/><rect x="290" y="66" width="28" height="22" rx="3"/><rect x="320" y="66" width="28" height="22" rx="3"/></g>
+          <rect x="350" y="66" width="28" height="22" rx="3" fill="#eef1f5"/>
+          <!-- r3 work4 -->
+          <g fill="#2f6fb0"><rect x="140" y="92" width="28" height="22" rx="3"/><rect x="170" y="92" width="28" height="22" rx="3"/><rect x="200" y="92" width="28" height="22" rx="3"/><rect x="230" y="92" width="28" height="22" rx="3"/></g>
+          <g fill="#eef1f5"><rect x="260" y="92" width="28" height="22" rx="3"/><rect x="290" y="92" width="28" height="22" rx="3"/><rect x="320" y="92" width="28" height="22" rx="3"/><rect x="350" y="92" width="28" height="22" rx="3"/></g>
+          <!-- r4 work8 -->
+          <g fill="#2f6fb0"><rect x="140" y="118" width="28" height="22" rx="3"/><rect x="170" y="118" width="28" height="22" rx="3"/><rect x="200" y="118" width="28" height="22" rx="3"/><rect x="230" y="118" width="28" height="22" rx="3"/><rect x="260" y="118" width="28" height="22" rx="3"/><rect x="290" y="118" width="28" height="22" rx="3"/><rect x="320" y="118" width="28" height="22" rx="3"/><rect x="350" y="118" width="28" height="22" rx="3"/></g>
+          <line x1="386" y1="34" x2="386" y2="146" stroke="#e8590c" stroke-width="2"/>
+          <text x="394" y="60" font-size="11" fill="#e8590c" font-weight="700">最慢者决定整批</text>
+          <text x="394" y="76" font-size="11" fill="#e8590c">空槽无法复用</text>
+        </g>
+        <line x1="40" y1="158" x2="880" y2="158" stroke="#d7dee8"/>
+        <!-- continuous rows y=180,206,232,258 -->
+        <g>
+          <!-- r1: A 0..4 navy, E 5..7 orange -->
+          <g fill="#23456f"><rect x="140" y="180" width="28" height="22" rx="3"/><rect x="170" y="180" width="28" height="22" rx="3"/><rect x="200" y="180" width="28" height="22" rx="3"/><rect x="230" y="180" width="28" height="22" rx="3"/><rect x="260" y="180" width="28" height="22" rx="3"/></g>
+          <g fill="#e8590c"><rect x="290" y="180" width="28" height="22" rx="3"/><rect x="320" y="180" width="28" height="22" rx="3"/><rect x="350" y="180" width="28" height="22" rx="3"/></g>
+          <!-- r2: B 0..6 blue, F 7 purple -->
+          <g fill="#2f6fb0"><rect x="140" y="206" width="28" height="22" rx="3"/><rect x="170" y="206" width="28" height="22" rx="3"/><rect x="200" y="206" width="28" height="22" rx="3"/><rect x="230" y="206" width="28" height="22" rx="3"/><rect x="260" y="206" width="28" height="22" rx="3"/><rect x="290" y="206" width="28" height="22" rx="3"/><rect x="320" y="206" width="28" height="22" rx="3"/></g>
+          <rect x="350" y="206" width="28" height="22" rx="3" fill="#6d5bd0"/>
+          <!-- r3: C starts1 teal 1..5, G 6..7 -->
+          <rect x="140" y="232" width="28" height="22" rx="3" fill="#eef1f5"/>
+          <g fill="#0d9488"><rect x="170" y="232" width="28" height="22" rx="3"/><rect x="200" y="232" width="28" height="22" rx="3"/><rect x="230" y="232" width="28" height="22" rx="3"/><rect x="260" y="232" width="28" height="22" rx="3"/><rect x="290" y="232" width="28" height="22" rx="3"/></g>
+          <g fill="#3f9bb5"><rect x="320" y="232" width="28" height="22" rx="3"/><rect x="350" y="232" width="28" height="22" rx="3"/></g>
+          <!-- r4: D 0..2 gold, H 3..6 #c2693a, I 7 #4e8c7a -->
+          <g fill="#b9832b"><rect x="140" y="258" width="28" height="22" rx="3"/><rect x="170" y="258" width="28" height="22" rx="3"/><rect x="200" y="258" width="28" height="22" rx="3"/></g>
+          <g fill="#c2693a"><rect x="230" y="258" width="28" height="22" rx="3"/><rect x="260" y="258" width="28" height="22" rx="3"/><rect x="290" y="258" width="28" height="22" rx="3"/><rect x="320" y="258" width="28" height="22" rx="3"/></g>
+          <rect x="350" y="258" width="28" height="22" rx="3" fill="#4e8c7a"/>
+        </g>
+        <text x="430" y="196" font-size="11.5" fill="#16233a">不同颜色 = 不同请求；谁完成就立刻在该槽位放入新请求</text>
+        <text x="430" y="246" font-size="11.5" fill="#0d9488" font-weight="700">每个 iteration 重新组 batch，GPU 几乎不空闲</text>
+        <text x="430" y="276" font-size="11" fill="#697a92">吞吐显著高于静态批处理（业界主流默认）</text>
+      </g>
+    </svg>
+    <figcaption><b>图 11</b><span>Static Batching（上）整批同进同出，短请求空等最慢者、槽位浪费；Continuous Batching（下）把调度粒度从“整批”细化到<strong>每个 iteration（一次前向）</strong>，请求完成后立即在空槽插入新请求，GPU 持续满载。</span></figcaption>
+  </figure>
+  <div class="paper sys"><span class="pid">ORCA</span><div><div class="ptitle">Orca: A Distributed Serving System for Transformer-Based Generative Models</div><div class="pinfo">Yu et al. · OSDI 2022 · 首次提出 iteration-level 调度与 selective batching，是连续批处理的源头</div></div><a href="https://www.usenix.org/conference/osdi22/presentation/yu">USENIX OSDI&apos;22</a></div>
+  <h3>PagedAttention：像操作系统管内存一样管 KV</h3>
+  <p>传统做法给每个请求<strong>按最大生成长度连续预留一整段显存</strong>。但请求实际生成长度未知，预留多了形成<strong>内部碎片</strong>、预留少了直接 OOM；再加上预留的显存无法在请求间灵活共享，浪费惊人（vLLM 论文测得浪费 60–80%）。</p>
+  <p><strong>PagedAttention 借鉴 OS 虚拟内存分页</strong>：把 KV Cache 切成固定大小的 <strong>Block（页，如每块 16 个 token）</strong>；逻辑上连续的 KV，物理上可以分散存放，由<strong>页表</strong>记录映射；按需分配、用完即回收。更进一步，<strong>相同前缀（系统提示、公共 few-shot、beam/采样分叉）的 KV 块可以在多个请求间共享（写时复制）</strong>，几乎消灭碎片。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 320" role="img" aria-label="PagedAttention 分页与页表">
+      <g font-family="inherit">
+        <text x="40" y="40" font-size="13" font-weight="700" fill="#16233a">传统：连续预留</text>
+        <!-- 3 tracks start x=200 step40 w38 h22 -->
+        <g>
+          <!-- r1 used4 -->
+          <g fill="#2f6fb0"><rect x="200" y="48" width="38" height="22" rx="3"/><rect x="240" y="48" width="38" height="22" rx="3"/><rect x="280" y="48" width="38" height="22" rx="3"/><rect x="320" y="48" width="38" height="22" rx="3"/></g>
+          <g fill="#fbe4dd"><rect x="360" y="48" width="38" height="22" rx="3"/><rect x="400" y="48" width="38" height="22" rx="3"/><rect x="440" y="48" width="38" height="22" rx="3"/><rect x="480" y="48" width="38" height="22" rx="3"/><rect x="520" y="48" width="38" height="22" rx="3"/><rect x="560" y="48" width="38" height="22" rx="3"/><rect x="600" y="48" width="38" height="22" rx="3"/><rect x="640" y="48" width="38" height="22" rx="3"/><rect x="680" y="48" width="38" height="22" rx="3"/></g>
+          <!-- r2 used8 -->
+          <g fill="#2f6fb0"><rect x="200" y="76" width="38" height="22" rx="3"/><rect x="240" y="76" width="38" height="22" rx="3"/><rect x="280" y="76" width="38" height="22" rx="3"/><rect x="320" y="76" width="38" height="22" rx="3"/><rect x="360" y="76" width="38" height="22" rx="3"/><rect x="400" y="76" width="38" height="22" rx="3"/><rect x="440" y="76" width="38" height="22" rx="3"/><rect x="480" y="76" width="38" height="22" rx="3"/></g>
+          <g fill="#fbe4dd"><rect x="520" y="76" width="38" height="22" rx="3"/><rect x="560" y="76" width="38" height="22" rx="3"/><rect x="600" y="76" width="38" height="22" rx="3"/><rect x="640" y="76" width="38" height="22" rx="3"/><rect x="680" y="76" width="38" height="22" rx="3"/></g>
+          <!-- r3 used6 -->
+          <g fill="#2f6fb0"><rect x="200" y="104" width="38" height="22" rx="3"/><rect x="240" y="104" width="38" height="22" rx="3"/><rect x="280" y="104" width="38" height="22" rx="3"/><rect x="320" y="104" width="38" height="22" rx="3"/><rect x="360" y="104" width="38" height="22" rx="3"/><rect x="400" y="104" width="38" height="22" rx="3"/></g>
+          <g fill="#fbe4dd"><rect x="440" y="104" width="38" height="22" rx="3"/><rect x="480" y="104" width="38" height="22" rx="3"/><rect x="520" y="104" width="38" height="22" rx="3"/><rect x="560" y="104" width="38" height="22" rx="3"/><rect x="600" y="104" width="38" height="22" rx="3"/><rect x="640" y="104" width="38" height="22" rx="3"/><rect x="680" y="104" width="38" height="22" rx="3"/></g>
+          <text x="740" y="76" font-size="11" fill="#d7541a" font-weight="700">红色=内部碎片</text>
+          <text x="740" y="94" font-size="11" fill="#d7541a">浪费 60–80%</text>
+        </g>
+        <line x1="40" y1="142" x2="880" y2="142" stroke="#d7dee8"/>
+        <text x="40" y="166" font-size="13" font-weight="700" fill="#16233a">分页：逻辑连续 / 物理分散</text>
+        <!-- connectors -->
+        <g stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" fill="none">
+          <path d="M150,182 L692,170"/><path d="M167,194 L500,238"/><path d="M199,182 L788,204"/>
+          <path d="M452,170 L135,222"/><path d="M452,170 L135,262"/>
+        </g>
+        <!-- logical sequences -->
+        <g>
+          <g fill="#23456f"><rect x="120" y="170" width="30" height="24" rx="4"/><rect x="152" y="170" width="30" height="24" rx="4"/><rect x="184" y="170" width="30" height="24" rx="4"/></g>
+          <!-- seq2: shared orange then blue -->
+          <rect x="120" y="210" width="30" height="24" rx="4" fill="#e8590c"/>
+          <g fill="#2f6fb0"><rect x="152" y="210" width="30" height="24" rx="4"/><rect x="184" y="210" width="30" height="24" rx="4"/><rect x="216" y="210" width="30" height="24" rx="4"/></g>
+          <!-- seq3: shared orange then teal -->
+          <rect x="120" y="250" width="30" height="24" rx="4" fill="#e8590c"/>
+          <g fill="#0d9488"><rect x="152" y="250" width="30" height="24" rx="4"/><rect x="184" y="250" width="30" height="24" rx="4"/></g>
+          <text x="262" y="226" font-size="10.5" fill="#e8590c">共享前缀块</text>
+        </g>
+        <!-- physical pool -->
+        <text x="430" y="152" font-size="11" fill="#697a92" font-family="JetBrains Mono">物理块池（按需分配）</text>
+        <g>
+          <rect x="430" y="158" width="44" height="30" rx="4" fill="#e8590c"/>
+          <rect x="670" y="158" width="44" height="30" rx="4" fill="#23456f"/>
+          <rect x="574" y="158" width="44" height="30" rx="4" fill="#2f6fb0"/>
+          <rect x="766" y="192" width="44" height="30" rx="4" fill="#23456f"/>
+          <rect x="478" y="226" width="44" height="30" rx="4" fill="#23456f"/>
+          <rect x="718" y="226" width="44" height="30" rx="4" fill="#2f6fb0"/>
+          <rect x="622" y="226" width="44" height="30" rx="4" fill="#0d9488"/>
+          <rect x="526" y="260" width="44" height="30" rx="4" fill="#2f6fb0"/>
+          <rect x="766" y="260" width="44" height="30" rx="4" fill="#0d9488"/>
+          <!-- empty slots -->
+          <g fill="#f1f4f8" stroke="#e2e8f0">
+            <rect x="478" y="158" width="44" height="30" rx="4"/><rect x="526" y="158" width="44" height="30" rx="4"/><rect x="622" y="158" width="44" height="30" rx="4"/><rect x="718" y="158" width="44" height="30" rx="4"/>
+            <rect x="430" y="192" width="44" height="30" rx="4"/><rect x="478" y="192" width="44" height="30" rx="4"/><rect x="526" y="192" width="44" height="30" rx="4"/><rect x="574" y="192" width="44" height="30" rx="4"/><rect x="622" y="192" width="44" height="30" rx="4"/><rect x="670" y="192" width="44" height="30" rx="4"/><rect x="718" y="192" width="44" height="30" rx="4"/>
+            <rect x="430" y="226" width="44" height="30" rx="4"/><rect x="526" y="226" width="44" height="30" rx="4"/><rect x="574" y="226" width="44" height="30" rx="4"/><rect x="670" y="226" width="44" height="30" rx="4"/>
+            <rect x="430" y="260" width="44" height="30" rx="4"/><rect x="478" y="260" width="44" height="30" rx="4"/><rect x="574" y="260" width="44" height="30" rx="4"/><rect x="622" y="260" width="44" height="30" rx="4"/><rect x="670" y="260" width="44" height="30" rx="4"/><rect x="718" y="260" width="44" height="30" rx="4"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <figcaption><b>图 12</b><span>上：连续预留产生大量内部碎片；下：PagedAttention 把 KV 切成固定块、页表映射，物理块按需分散分配，相同前缀块（橙）跨请求共享。显存浪费从 60–80% 降到个位数。</span></figcaption>
+  </figure>
+  <div class="paper sys"><span class="pid">vLLM</span><div><div class="ptitle">Efficient Memory Management for Large Language Model Serving with PagedAttention</div><div class="pinfo">Kwon et al. · UC Berkeley · SOSP 2023 · PagedAttention 与 vLLM，吞吐较 HF/传统方案数倍提升</div></div><a href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a></div>
+
+  <h3>Chunked Prefill：别让长 prompt 一次堵死所有人</h3>
+  <p>Prefill 是 Compute-Bound，一个几万 token 的长请求会<strong>连续占用 GPU 多个 iteration</strong>，期间正在 Decode 的请求得不到调度，ITL 出现尖刺、用户明显卡顿。<strong>Chunked Prefill 把长 Prefill 切成固定小块（chunk），与 Decode 请求在 iteration 级别交错执行</strong>，必要时还把多个 prefill 块拼进同一 batch，兼顾首 token 时延与吞吐。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 220" role="img" aria-label="Chunked Prefill 交错调度">
+      <g font-family="inherit">
+        <text x="40" y="40" font-size="13" font-weight="700" fill="#16233a">无 Chunked：长 Prefill 独占</text>
+        <rect x="130" y="52" width="300" height="34" rx="6" fill="#e8590c"/><text x="280" y="74" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">Prefill（连续数百 iteration）</text>
+        <g fill="#0d9488"><rect x="436" y="52" width="30" height="34" rx="5"/><rect x="470" y="52" width="30" height="34" rx="5"/></g>
+        <text x="130" y="116" font-size="11.5" fill="#d7541a">Decode 请求全程排队 → ITL 尖刺、卡顿</text>
+        <line x1="40" y1="134" x2="880" y2="134" stroke="#d7dee8"/>
+        <text x="40" y="160" font-size="13" font-weight="700" fill="#16233a">Chunked：切块与 Decode 交错</text>
+        <g>
+          <rect x="130" y="170" width="66" height="32" rx="6" fill="#e8590c"/><rect x="202" y="170" width="30" height="32" rx="5" fill="#0d9488"/><rect x="238" y="170" width="30" height="32" rx="5" fill="#0d9488"/>
+          <rect x="274" y="170" width="66" height="32" rx="6" fill="#e8590c"/><rect x="346" y="170" width="30" height="32" rx="5" fill="#0d9488"/><rect x="382" y="170" width="30" height="32" rx="5" fill="#0d9488"/>
+          <rect x="418" y="170" width="66" height="32" rx="6" fill="#e8590c"/><rect x="490" y="170" width="30" height="32" rx="5" fill="#0d9488"/><rect x="526" y="170" width="30" height="32" rx="5" fill="#0d9488"/>
+          <rect x="562" y="170" width="66" height="32" rx="6" fill="#e8590c"/><rect x="634" y="170" width="30" height="32" rx="5" fill="#0d9488"/><rect x="670" y="170" width="30" height="32" rx="5" fill="#0d9488"/>
+        </g>
+        <text x="710" y="190" font-size="11.5" fill="#0d9488" font-weight="700">P=Prefill块　D=Decode</text>
+        <text x="710" y="206" font-size="11" fill="#697a92">ITL 保持平滑</text>
+      </g>
+    </svg>
+    <figcaption><b>图 13</b><span>Chunked Prefill：长 Prefill 被切成 chunk（橙）与 Decode（青）在 iteration 级交错，避免长请求阻塞解码；现代推理引擎（vLLM / SGLang / TensorRT-LLM）均已默认开启。</span></figcaption>
+  </figure>
+  <div class="grid2">
+    <div class="paper sys"><span class="pid">SARATHI</span><div><div class="ptitle">Sarathi: Efficient LLM Inference by Pipelining Token Computation (Chunked Prefill)</div><div class="pinfo">Agrawal et al. · 2023 · 首次提出 chunked prefill + decode 流水</div></div><a href="https://arxiv.org/abs/2308.16369">arXiv:2308.16369</a></div>
+    <div class="paper sys"><span class="pid">SARATHI-SERVE</span><div><div class="ptitle">Sarathi-Serve: Chase Away Prefix Queue Under Chunked Prefills</div><div class="pinfo">Agrawal et al. · OSDI 2024 · Stall-free 调度，延迟与吞吐协同</div></div><a href="https://arxiv.org/abs/2403.02310">arXiv:2403.02310</a></div>
+  </div>
+</section>
+  <h3>RadixAttention：把公共前缀缓存成一棵前缀树</h3>
+  <p>多轮对话、Agent、共享系统提示、few-shot 场景里，大量请求共享相同前缀。SGLang 提出 <strong>RadixAttention</strong>：用一棵 <strong>基数树（Radix Tree）</strong>维护所有处理过的 prompt，新请求自动做<strong>最长前缀匹配</strong>，命中的 KV 直接复用、未命中部分才算；缓存紧张时按 <strong>LRU 驱逐</strong>最少使用的叶子。它与 PagedAttention 是搭档——分页管“块怎么放”，基数树管“哪些前缀能复用”。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 300" role="img" aria-label="RadixAttention 前缀树">
+      <g font-family="inherit" text-anchor="middle">
+        <!-- edges -->
+        <g stroke="#8fa3b8" stroke-width="2" fill="none">
+          <line x1="450" y1="68" x2="450" y2="92"/><line x1="450" y1="126" x2="450" y2="150"/><line x1="450" y1="184" x2="450" y2="208"/>
+          <path d="M450,242 L450,254 L180,254 L180,266"/><path d="M450,254 L450,266"/><path d="M450,242 L450,254 L720,254 L720,266"/>
+        </g>
+        <!-- prefix cached nodes -->
+        <g fill="#0d9488">
+          <rect x="405" y="34" width="90" height="34" rx="8"/><rect x="405" y="92" width="90" height="34" rx="8"/>
+          <rect x="395" y="150" width="110" height="34" rx="8"/><rect x="410" y="208" width="80" height="34" rx="8"/>
+        </g>
+        <g fill="#fff" font-size="13" font-weight="700">
+          <text x="450" y="56">ROOT</text><text x="450" y="114">The</text><text x="450" y="172">capital</text><text x="450" y="230">of</text>
+        </g>
+        <!-- branch nodes -->
+        <rect x="105" y="266" width="150" height="30" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <rect x="375" y="266" width="150" height="30" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <rect x="645" y="266" width="150" height="30" rx="8" fill="#fff" stroke="#94a3b8"/>
+        <g font-size="12" fill="#16233a"><text x="180" y="286">Britain → London</text><text x="450" y="286">France → Paris</text><text x="720" y="286">China → Beijing</text></g>
+        <text x="60" y="52" text-anchor="start" font-size="11.5" fill="#0d9488" font-weight="700">青色节点：公共前缀</text>
+        <text x="60" y="70" text-anchor="start" font-size="11" fill="#0d9488">一次计算、多请求复用</text>
+        <text x="60" y="278" text-anchor="start" font-size="11" fill="#697a92">叶子可 LRU 驱逐</text>
+      </g>
+    </svg>
+    <figcaption><b>图 14</b><span>RadixAttention 基数树：“The capital of”作为公共前缀只算一次并被三个请求共享；分叉部分各自计算。多轮对话 / Agent / 公共 system prompt 场景命中率极高。</span></figcaption>
+  </figure>
+  <div class="paper sys"><span class="pid">SGLANG</span><div><div class="ptitle">SGLang: Efficient Execution of Structured Language Model Programs</div><div class="pinfo">Zheng et al. · NeurIPS 2024/2025 · RadixAttention 自动前缀复用 + 结构化生成运行时</div></div><a href="https://arxiv.org/abs/2312.07104">arXiv:2312.07104</a></div>
+
+  <h3>从显存带宽反推：7B 模型的理论 TPS 极限</h3>
+  <style>
+    .flow4{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:18px 0}
+    .fstep{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;position:relative}
+    .fstep .k{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700}
+    .fstep .v{font-size:14px;font-weight:700;margin-top:4px;color:var(--ink)}
+    .fstep small{font-size:11.5px;color:var(--muted)}
+    .farrow{align-self:center;color:var(--muted);font-size:18px}
+  </style>
+  <div class="flow4">
+    <div class="fstep"><div class="k">STEP 1 · 权重</div><div class="v">7B × 2B ≈ 14 GiB</div><small>FP16/BF16 常驻 HBM</small></div>
+    <span class="farrow">→</span>
+    <div class="fstep"><div class="k">STEP 2 · 带宽</div><div class="v">3.35 TiB/s</div><small>H100 HBM3 峰值</small></div>
+    <span class="farrow">→</span>
+    <div class="fstep"><div class="k">STEP 3 · 读一遍</div><div class="v">14 / 3350 ≈ 4.2 ms</div><small>单 token 最短访存时间</small></div>
+    <span class="farrow">→</span>
+    <div class="fstep"><div class="k">STEP 4 · 理论上限</div><div class="v">1 / 4.2ms ≈ 238 TPS</div><small>batch=1、纯读权重</small></div>
+  </div>
+  <div class="callout c-gold"><span class="ct">理论 vs 现实</span><p>实测 7B 单请求约 <strong>100 TPS 量级</strong>——因为还要读取随序列增长的 KV Cache、kernel launch / 调度 / 通信开销、MFU 不可能 100%。<strong>理论值的意义是给出“天花板”</strong>：当实测离天花板很远时，说明还有调度或访存可挖；batch 拼大后吞吐可逼近“带宽×算术强度”的整体上限。</p></div>
+
+  <h3>服务指标体系：先定义“好”，再谈优化</h3>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:15%"><col style="width:55%"><col style="width:30%"></colgroup>
+      <thead><tr><th>指标</th><th>含义</th><th>主要相关阶段/手段</th></tr></thead>
+      <tbody>
+        <tr><td>TTFT</td><td>Time To First Token，发出请求到看到第一个字的时间，最影响“快不快”的第一印象</td><td>Prefill；FlashAttn / PD 分离</td></tr>
+        <tr><td>ITL</td><td>Inter-Token Latency，相邻 token 间隔，决定流式输出是否“卡顿”</td><td>Decode；Chunked Prefill / 减 KV</td></tr>
+        <tr><td>TPOT</td><td>Time Per Output Token，每输出 token 平均耗时（含首字口径差异）</td><td>Decode</td></tr>
+        <tr><td>TPS / 吞吐</td><td>系统每秒生成 token 数（聚合所有请求），决定单卡能扛多少用户</td><td>Batching / 分页 / PD 分离</td></tr>
+        <tr><td>TBT</td><td>Time Between Tokens，更严格的逐 token 间隔 SLO（如 P99 &lt; 某阈值）</td><td>调度 / Chunked Prefill</td></tr>
+        <tr><td>TTLT</td><td>Time To Last Token，完整响应时延（非流式场景）</td><td>全链路</td></tr>
+        <tr><td>Goodput</td><td>在 SLO（TTFT/ITL）达标前提下的有效吞吐，比裸吞吐更有意义</td><td>PD 分离的核心优化目标</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:30%"><col style="width:22%"><col style="width:48%"></colgroup>
+      <thead><tr><th>现象 / 问题</th><th>看哪个指标</th><th>对应手段</th></tr></thead>
+      <tbody>
+        <tr><td>第一个字等太久</td><td>TTFT ↑</td><td>FlashAttention、Prefill 并行、PD 分离、前缀缓存</td></tr>
+        <tr><td>打字机一卡一卡</td><td>ITL P99 尖刺</td><td>Chunked Prefill、Continuous Batching、压缩 KV</td></tr>
+        <tr><td>单卡扛不住并发</td><td>TPS / Goodput ↓</td><td>Continuous Batching、PagedAttention、PD 分离</td></tr>
+        <tr><td>长上下文 OOM</td><td>显存占用</td><td>MLA、KV 量化、KV 驱逐、分页</td></tr>
+        <tr><td>JSON / 代码格式非法</td><td>格式合规率</td><td>约束解码（Outlines / XGrammar / GBNF）</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<!-- ================= 第 5 章 ================= -->
+<section id="ch5" class="wrap">
+  <div class="sec-head"><span class="sec-no">05</span><h2>架构级：PD 分离</h2><span class="sub">PREFILL / DECODE DISAGGREGATION</span></div>
+
+  <h3>Prefill 和 Decode 的资源诉求，差了约 140 倍</h3>
+  <p>同一个模型、同一块卡，Prefill 与 Decode 的吞吐差距是数量级的。以 20 层模型在消费级卡上的实测为例（视频作者数据）：<strong>Prefill 约 14,000 token/s，Decode 约 100 token/s，相差约 140 倍</strong>。更麻烦的是二者对硬件的偏好相反：</p>
+  <ul>
+    <li><strong>Prefill</strong> 要<strong>强算力</strong>（高 FLOPs、可接受较小显存），算力越猛 TTFT 越低；</li>
+    <li><strong>Decode</strong> 要<strong>大显存 + 高带宽</strong>（装得下权重与大量 KV、搬得快），算力反而不重要。</li>
+  </ul>
+  <p>把两阶段<strong>混部（Co-located）</strong>在同一批 GPU 上，会互相干扰：长 Prefill 拖慢 Decode 的 ITL，Decode 又占着算力让 Prefill 排队，资源配比无法同时满足两边，整体利用率与 SLO 双输。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 280" role="img" aria-label="Prefill Decode 吞吐差距与利用率对比">
+      <g font-family="inherit">
+        <text x="40" y="40" font-size="13" font-weight="700" fill="#16233a">吞吐差距（20 层模型实测）</text>
+        <line x1="80" y1="236" x2="360" y2="236" stroke="#94a3b8"/>
+        <rect x="110" y="76" width="70" height="160" rx="6" fill="#0d9488"/>
+        <text x="145" y="66" text-anchor="middle" font-size="12" fill="#0d9488" font-weight="700">Prefill</text>
+        <text x="145" y="96" text-anchor="middle" font-size="11" fill="#fff">~14,000</text>
+        <text x="145" y="112" text-anchor="middle" font-size="10" fill="#d4ece9">tok/s</text>
+        <rect x="230" y="214" width="70" height="22" rx="6" fill="#b9832b"/>
+        <text x="265" y="206" text-anchor="middle" font-size="12" fill="#b9832b" font-weight="700">Decode ~100 tok/s</text>
+        <text x="200" y="264" text-anchor="middle" font-size="16" fill="#e8590c" font-weight="800" font-family="JetBrains Mono">≈ 140×</text>
+        <line x1="400" y1="40" x2="400" y2="250" stroke="#d7dee8" stroke-dasharray="5 5"/>
+        <text x="430" y="40" font-size="13" font-weight="700" fill="#16233a">集群利用率（示意）</text>
+        <text x="430" y="92" font-size="12" fill="#3c4d66">混部 Co-located</text>
+        <rect x="430" y="100" width="400" height="22" rx="6" fill="#eef1f5"/>
+        <rect x="430" y="100" width="160" height="22" rx="6" fill="#23456f"/>
+        <text x="600" y="116" font-size="11" fill="#fff" font-weight="700">~40%（互相干扰）</text>
+        <text x="430" y="160" font-size="12" fill="#3c4d66">PD 分离 Disaggregated</text>
+        <rect x="430" y="168" width="400" height="22" rx="6" fill="#e2f1ef"/>
+        <rect x="430" y="168" width="340" height="22" rx="6" fill="#0d9488"/>
+        <text x="782" y="184" text-anchor="end" font-size="11" fill="#fff" font-weight="700">~85%</text>
+        <text x="430" y="214" font-size="11" fill="#697a92">两类资源独立扩缩容、各跑最适合的阶段</text>
+        <text x="430" y="232" font-size="11" fill="#e8590c" font-weight="700">Mooncake：吞吐 +75%、TTFT −25%</text>
+      </g>
+    </svg>
+    <figcaption><b>图 15</b><span>左：Prefill/Decode 吞吐差约两个数量级；右：混部互相干扰、利用率低，PD 分离后两类资源独立配比、利用率与 SLO 同时改善（数值为论文/实测量级，具体随模型与硬件变化）。</span></figcaption>
+  </figure>
+
+  <h3>PD 分离怎么做</h3>
+  <p>核心是把两阶段拆到不同 GPU 池、<strong>各自独立扩缩容</strong>：请求先进 Prefill 池完成提示计算与首 token，生成的 KV Cache 通过高速互联<strong>整体搬运/复制</strong>到 Decode 池，再由 Decode 池完成后续自回归生成并流式返回。难点不在“拆”，而在<strong>KV Cache 的高效迁移与全局调度</strong>。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 310" role="img" aria-label="PD 分离架构">
+      <defs><marker id="ar5" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit">
+        <!-- scheduler -->
+        <rect x="330" y="20" width="240" height="40" rx="10" fill="#16233a"/>
+        <text x="450" y="46" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">全局调度器 / 路由（SLO 感知）</text>
+        <!-- prefill pool -->
+        <rect x="50" y="92" width="250" height="160" rx="14" fill="#e7eff9" stroke="#23456f" stroke-width="1.6"/>
+        <text x="175" y="118" text-anchor="middle" font-size="14" font-weight="800" fill="#23456f">Prefill GPU 池</text>
+        <g fill="#23456f">
+          <rect x="78" y="134" width="62" height="44" rx="7"/><rect x="150" y="134" width="62" height="44" rx="7"/><rect x="222" y="134" width="56" height="44" rx="7"/>
+          <rect x="78" y="188" width="62" height="44" rx="7"/><rect x="150" y="188" width="62" height="44" rx="7"/><rect x="222" y="188" width="56" height="44" rx="7"/>
+        </g>
+        <text x="175" y="246" text-anchor="middle" font-size="11" fill="#23456f">高 FLOPs 配置，算力优先</text>
+        <!-- transfer -->
+        <rect x="370" y="120" width="160" height="104" rx="14" fill="#0d9488"/>
+        <text x="450" y="152" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fff">KV 迁移层</text>
+        <text x="450" y="174" text-anchor="middle" font-size="11" fill="#d4ece9">RDMA / NVLink</text>
+        <text x="450" y="192" text-anchor="middle" font-size="11" fill="#d4ece9">GPUDirect / NIXL</text>
+        <text x="450" y="214" text-anchor="middle" font-size="10.5" fill="#bfe0db">页对齐、零拷贝传输</text>
+        <!-- decode pool -->
+        <rect x="600" y="92" width="250" height="160" rx="14" fill="#f7efdd" stroke="#b9832b" stroke-width="1.6"/>
+        <text x="725" y="118" text-anchor="middle" font-size="14" font-weight="800" fill="#b9832b">Decode GPU 池</text>
+        <g fill="#b9832b">
+          <rect x="628" y="134" width="62" height="44" rx="7"/><rect x="700" y="134" width="62" height="44" rx="7"/><rect x="772" y="134" width="56" height="44" rx="7"/>
+          <rect x="628" y="188" width="62" height="44" rx="7"/><rect x="700" y="188" width="62" height="44" rx="7"/><rect x="772" y="188" width="56" height="44" rx="7"/>
+        </g>
+        <text x="725" y="246" text-anchor="middle" font-size="11" fill="#b9832b">大显存 / 高带宽配置</text>
+        <!-- arrows -->
+        <g stroke="#3c4d66" stroke-width="2" fill="none" marker-end="url(#ar5)">
+          <path d="M380,46 L175,92"/><path d="M520,46 L725,92"/>
+          <line x1="300" y1="172" x2="366" y2="172"/><line x1="530" y1="172" x2="596" y2="172"/>
+        </g>
+        <text x="333" y="162" text-anchor="middle" font-size="10.5" fill="#3c4d66">推送 KV</text>
+        <line x1="725" y1="252" x2="725" y2="282" stroke="#e8590c" stroke-width="2" marker-end="url(#ar5)"/>
+        <text x="725" y="300" text-anchor="middle" font-size="11.5" fill="#e8590c" font-weight="700">流式输出 token</text>
+      </g>
+    </svg>
+    <figcaption><b>图 16</b><span>PD 分离架构：全局调度器把请求导向 Prefill 池，KV 经高速迁移层送到 Decode 池独立生成。两池硬件型号、卡数、并行策略可完全不同，按各自瓶颈独立扩缩容。</span></figcaption>
+  </figure>
+  <h3>三篇奠基论文，三种侧重</h3>
+  <div class="paper gold"><span class="pid">DistServe</span><div><div class="ptitle">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized LLM Serving</div><div class="pinfo">Zhong et al. · UC Berkeley / UChicago · OSDI 2024 · 用 Goodput（SLO 达标吞吐）论证分离的必要性，两阶段独立部署、独立并行策略，Goodput 提升数量级</div></div><a href="https://arxiv.org/abs/2401.09670">arXiv:2401.09670</a></div>
+  <div class="paper gold"><span class="pid">Mooncake</span><div><div class="ptitle">Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving</div><div class="pinfo">Qin et al. · Moonshot AI / 清华大学 · 2024（ACM TOS 2025）· 以 KV Cache 为中心，Prefill/Decode 分离 + 跨 GPU/CPU/SSD 的全局 KV Cache Pool 与 KV Agent 调度；集群吞吐 +75%、TTFT −25%（Kimi 生产验证，已开源）</div></div><a href="https://arxiv.org/abs/2407.00079">arXiv:2407.00079</a></div>
+  <div class="paper gold"><span class="pid">Splitwise</span><div><div class="ptitle">Splitwise: Efficient Generative LLM Inference Using Phase Splitting</div><div class="pinfo">Patel, Choukse et al. · Microsoft · ISCA 2024 · 把 Prefill/Decode 拆到<strong>最具性价比的异构硬件</strong>上（强算力卡跑 Prefill、大显存/低成本卡跑 Decode），以最小化每 token 成本，KV 经 RDMA 迁移</div></div><a href="https://arxiv.org/abs/2311.18677">arXiv:2311.18677</a></div>
+
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:16%"><col style="width:30%"><col style="width:28%"><col style="width:26%"></colgroup>
+      <thead><tr><th>方案</th><th>核心主张</th><th>KV Cache 处理</th><th>最适合回答的问题</th></tr></thead>
+      <tbody>
+        <tr><td>DistServe</td><td>按 Goodput 重配资源，两阶段独立扩缩</td><td>Prefill→Decode 高速直传</td><td>“怎样让 SLO 达标吞吐最大？”</td></tr>
+        <tr><td>Mooncake</td><td>KVCache-centric，全局多级缓存 + 全局调度</td><td>跨 GPU/CPU/SSD 的 KV Pool，可复用、可落盘</td><td>“超大规模多租户、多轮对话怎么省？”</td></tr>
+        <tr><td>Splitwise</td><td>异构硬件按阶段分工，成本最优</td><td>跨机 RDMA 迁移</td><td>“怎样把每 token 成本打到最低？”</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>关键工程问题：KV Cache 怎么搬</h3>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:22%"><col style="width:24%"><col style="width:30%"><col style="width:24%"></colgroup>
+      <thead><tr><th>通道</th><th>典型带宽</th><th>适用范围</th><th>特点</th></tr></thead>
+      <tbody>
+        <tr><td>NVLink / NVSwitch</td><td>~900 GB/s（H100）</td><td>同一节点内 GPU 之间</td><td>最快，P/D 同机时首选</td></tr>
+        <tr><td>RDMA（RoCE / InfiniBand）</td><td>400/800 Gb/s（约 50–100 GB/s）</td><td>跨节点、跨 P/D 池</td><td>绕过 CPU、零拷贝，生产主流</td></tr>
+        <tr><td>GPUDirect (Storage/Memory)</td><td>随 PCIe/NIC</td><td>GPU 直访对端显存 / 存储</td><td>避免经主机内存中转</td></tr>
+        <tr><td>PCIe / TCP 回退</td><td>较低</td><td>无高速互联时兜底</td><td>实现简单、延迟高</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>工程上还会做：KV 块<strong>页对齐、压缩后再传（FP8）、传输与计算重叠、只传增量</strong>，把迁移成本摊到流水线里，使它不成为新瓶颈。</p>
+
+  <h3>前沿：PD 分离正在“产品化、标配化”</h3>
+  <div class="callout c-teal"><span class="ct">NVIDIA Dynamo（2025 GTC 开源）</span><p>NVIDIA 推出的开源分布式推理编排框架，原生支持 <strong>Prefill/Decode 分离、GPU 异构与 SLO 感知路由</strong>，并配套 <strong>NIXL（NVIDIA Inference Xfer Library）</strong>做跨机 KV Cache 的异步零拷贝传输，与 TensorRT-LLM / vLLM 等引擎解耦。这标志着 PD 分离从“论文最佳实践”变成<strong>开箱即用的标准架构</strong>；vLLM、SGLang、Mooncake 也都已内置 disaggregated 模式。</p></div>
+</section>
+<!-- ================= 第 6 章 ================= -->
+<section id="ch6" class="wrap">
+  <div class="sec-head"><span class="sec-no">06</span><h2>解码算法：投机解码家族</h2><span class="sub">SPECULATIVE DECODING</span></div>
+  <p>前面的优化都在“喂饱”串行解码；投机解码家族更激进——<strong>先让一个便宜的“猜测者”一口气写出多个候选 token，再让大模型用一次并行前向统一验证</strong>，对的直接采纳、错的丢弃重算。如果猜测足够准，就相当于<strong>用一次前向的时间换出了多个 token</strong>，且输出分布与大模型完全一致（无损）。</p>
+
+  <h3>两阶段：Draft 猜测 → Target 验证</h3>
+  <figure class="fig">
+    <svg viewBox="0 0 900 250" role="img" aria-label="投机解码 draft verify 流程">
+      <defs><marker id="ar6" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit">
+        <rect x="40" y="80" width="150" height="96" rx="12" fill="#23456f"/>
+        <text x="115" y="116" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">猜测者 Draft</text>
+        <text x="115" y="140" text-anchor="middle" font-size="11.5" fill="#cfe0f2">小模型 / 头 / 自身</text>
+        <text x="115" y="160" text-anchor="middle" font-size="11" fill="#9fbfe0">快速、连续写 k 个</text>
+        <line x1="190" y1="128" x2="236" y2="128" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar6)"/>
+        <!-- candidates -->
+        <g text-anchor="middle" font-size="11.5">
+          <rect x="240" y="106" width="52" height="30" rx="6" fill="#e7eff9" stroke="#0d9488"/><text x="266" y="126" fill="#0d9488">The ✓</text>
+          <rect x="298" y="106" width="52" height="30" rx="6" fill="#e7eff9" stroke="#0d9488"/><text x="324" y="126" fill="#0d9488">cat ✓</text>
+          <rect x="356" y="106" width="52" height="30" rx="6" fill="#e7eff9" stroke="#0d9488"/><text x="382" y="126" fill="#0d9488">sat ✓</text>
+          <rect x="414" y="106" width="52" height="30" rx="6" fill="#fbe4dd" stroke="#d7541a"/><text x="440" y="126" fill="#d7541a">on ✗</text>
+          <text x="353" y="158" font-size="11" fill="#697a92">k 个候选（单链或树）</text>
+        </g>
+        <line x1="470" y1="128" x2="516" y2="128" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar6)"/>
+        <rect x="520" y="80" width="170" height="96" rx="12" fill="#0d9488"/>
+        <text x="605" y="112" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">大模型 Target</text>
+        <text x="605" y="136" text-anchor="middle" font-size="11.5" fill="#d4ece9">一次并行前向验证全部</text>
+        <text x="605" y="156" text-anchor="middle" font-size="11" fill="#bfe0db">逐位置接受 / 拒绝</text>
+        <line x1="690" y1="128" x2="736" y2="128" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar6)"/>
+        <rect x="740" y="100" width="120" height="56" rx="10" fill="#e8590c"/>
+        <text x="800" y="124" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">采纳前缀</text>
+        <text x="800" y="143" text-anchor="middle" font-size="10.5" fill="#fde2d2">拒绝处重采样后重来</text>
+        <text x="450" y="210" text-anchor="middle" font-size="12" fill="#3c4d66">关键：验证是<strong>并行</strong>的（一次前向处理 k 个候选），成本≈一次普通 decode，却可能一次确认多个 token</text>
+      </g>
+    </svg>
+    <figcaption><b>图 17</b><span>Draft→Verify：猜测者快速连续写出 k 个候选，大模型用一次并行前向逐位置校验；接受最长正确前缀，在第一个错误位置按目标分布重采样，然后进入下一轮。</span></figcaption>
+  </figure>
+
+  <h3>为什么能“无损”：拒绝采样的数学保证</h3>
+  <p>设目标模型分布为 $p(x)$、猜测者分布为 $q(x)$。对候选 token $x$，以概率</p>
+  <div class="formula-box">$$P(\text{接受}\,x)=\min\!\left(1,\frac{p(x)}{q(x)}\right)$$</div>
+  <p>决定接受；若被拒绝，则从修正分布 $r(x)\propto\max\big(0,\,p(x)-q(x)\big)$ 中重采样。可以证明：<strong>无论 $q$ 准不准，最终被接受的 token 分布严格等于目标分布 $p$</strong>。直觉上：猜测者认为概率不低于目标的 token（$q\ge p$）必然被接受；猜测者高估的 token 会以相应概率被拒、并“修正”回目标分布。猜测越准，接受长度越长、加速越多；猜得再差也只是退回普通解码，<strong>不会改变结果</strong>。</p>
+
+  <div class="paper spec"><span class="pid">SPEC-DEC</span><div><div class="ptitle">Fast Inference from Transformers via Speculative Decoding</div><div class="pinfo">Leviathan, Kalman, Matias · Google/DeepMind · ICML 2023 · 投机解码开山论文，小模型起草 + 大模型验证，证明无损并给出复杂度分析</div></div><a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a></div>
+  <div class="paper spec"><span class="pid">SPEC-SAMP</span><div><div class="ptitle">Accelerating Large Language Model Decoding with Speculative Sampling</div><div class="pinfo">Chen et al. · DeepMind · 2023 · 独立提出投机采样（拒绝采样），在对话模型上约 2× 加速</div></div><a href="https://arxiv.org/abs/2302.01318">arXiv:2302.01318</a></div>
+  <h3>自投机：用模型自己的“浅层”当草稿</h3>
+  <p>不想维护一个独立小模型，可以让<strong>目标模型自身在中间层提前输出（Early Exit / 早退）</strong>：用浅层快速起草，再走完整网络验证。只需少量微调让浅层具备预测能力，权重完全共享、部署简单，属于“自投机（Self-Speculative）”。</p>
+  <div class="paper spec"><span class="pid">D&amp;V</span><div><div class="ptitle">Draft &amp; Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding</div><div class="pinfo">Zhang et al. · 2023 · 自投机解码代表作，浅层起草 / 深层验证，无损</div></div><a href="https://arxiv.org/abs/2309.08168">arXiv:2309.08168</a></div>
+
+  <h3>Medusa：给大模型加几个“候选头”</h3>
+  <p>Medusa 在冻结的目标模型上<strong>新增若干轻量解码头（Medusa Heads）</strong>：头 1 预测下一个位置、头 2 预测下两个位置……各头给出 top 候选，组合成一棵<strong>候选树</strong>；再用 <strong>Tree Attention</strong>（为每条候选路径构造对应因果掩码）在<strong>一次前向</strong>里验证整棵树。它不需要逐步自回归起草，配合典型采样（typical sampling）与前缀树，典型加速 2.2–3.6×。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 280" role="img" aria-label="Medusa 多头与候选树">
+      <g font-family="inherit">
+        <!-- trunk -->
+        <rect x="40" y="52" width="170" height="180" rx="12" fill="#23456f"/>
+        <text x="125" y="82" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">Target 主干</text>
+        <text x="125" y="102" text-anchor="middle" font-size="11" fill="#a9c6e4">（冻结，权重共享）</text>
+        <g fill="#34568a"><rect x="62" y="118" width="126" height="22" rx="5"/><rect x="62" y="146" width="126" height="22" rx="5"/><rect x="62" y="174" width="126" height="22" rx="5"/><rect x="62" y="202" width="126" height="22" rx="5"/></g>
+        <!-- heads -->
+        <g fill="#0d9488">
+          <rect x="250" y="70" width="140" height="30" rx="7"/><rect x="250" y="108" width="140" height="30" rx="7"/>
+          <rect x="250" y="146" width="140" height="30" rx="7"/><rect x="250" y="184" width="140" height="30" rx="7"/>
+        </g>
+        <g fill="#fff" font-size="11.5" text-anchor="middle"><text x="320" y="90">Medusa 头 1（+1 位）</text><text x="320" y="128">头 2（+2 位）</text><text x="320" y="166">头 3（+3 位）</text><text x="320" y="204">头 4（+4 位）</text></g>
+        <line x1="390" y1="150" x2="430" y2="150" stroke="#3c4d66" stroke-width="2"/>
+        <!-- candidate tree -->
+        <text x="600" y="60" text-anchor="middle" font-size="12" fill="#3c4d66" font-weight="700">候选树（top 候选组合）</text>
+        <g stroke="#b9c6d6" stroke-width="1.6" fill="none">
+          <path d="M600,108 L520,140"/><path d="M600,108 L600,140"/><path d="M600,108 L680,140"/>
+          <path d="M520,168 L490,200"/><path d="M520,168 L540,200"/><path d="M600,168 L580,200"/><path d="M600,168 L620,200"/><path d="M680,168 L660,200"/><path d="M680,168 L700,200"/>
+        </g>
+        <rect x="583" y="80" width="34" height="28" rx="6" fill="#e8590c"/>
+        <g fill="#2f6fb0"><rect x="503" y="140" width="34" height="28" rx="6"/><rect x="583" y="140" width="34" height="28" rx="6"/><rect x="663" y="140" width="34" height="28" rx="6"/></g>
+        <g fill="#0d9488"><rect x="473" y="200" width="34" height="28" rx="6"/><rect x="523" y="200" width="34" height="28" rx="6"/><rect x="563" y="200" width="34" height="28" rx="6"/><rect x="603" y="200" width="34" height="28" rx="6"/><rect x="643" y="200" width="34" height="28" rx="6"/><rect x="683" y="200" width="34" height="28" rx="6"/></g>
+        <text x="600" y="252" text-anchor="middle" font-size="11.5" fill="#3c4d66">Tree Attention：一次前向、按路径掩码验证整棵树</text>
+      </g>
+    </svg>
+    <figcaption><b>图 18</b><span>Medusa：冻结主干 + 多个新增候选头，对未来 k 个位置各提 top 候选并组合成树；Tree Attention 用自定义因果掩码在一次前向中验证所有路径，命中即一次输出多个 token。</span></figcaption>
+  </figure>
+  <div class="paper spec"><span class="pid">MEDUSA</span><div><div class="ptitle">Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads</div><div class="pinfo">Cai et al. · CMU · ICML 2024 · 多头 + 候选树 + Tree Attention，工程上易插拔</div></div><a href="https://arxiv.org/abs/2401.10774">arXiv:2401.10774</a></div>
+
+  <h3>EAGLE：在“特征层”而不是 token 层起草</h3>
+  <p>Medusa 直接猜 token，EAGLE 更进一步：<strong>把目标模型中层的隐藏特征与已采样 token 一起喂给一个轻量自回归头，在“特征序列”上做预测</strong>，天然贴合目标模型的内部表示，接受率显著更高。三代演进：</p>
+  <ul>
+    <li><strong>EAGLE（ICML 2024）</strong>：特征 + token 起草，静态草稿树，约 3× 量级；</li>
+    <li><strong>EAGLE-2（EMNLP 2024）</strong>：<strong>动态草稿树</strong>——根据上下文置信度自适应分配候选，在“容易错”的地方布更多分支；</li>
+    <li><strong>EAGLE-3（2025）</strong>：提出 Training-Time Test Grid（训练时即铺好测试时的特征网格），去掉特征回归头、用特征自注意力统一建模，可随训练规模扩展，并<strong>原生支持推理（reasoning）模型</strong>，是当前公开方案中加速比第一梯队。</li>
+  </ul>
+  <div class="grid2">
+    <div class="paper spec"><span class="pid">EAGLE</span><div><div class="ptitle">EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty</div><div class="pinfo">Li et al. · Microsoft · ICML 2024</div></div><a href="https://arxiv.org/abs/2401.15077">arXiv:2401.15077</a></div>
+    <div class="paper spec"><span class="pid">EAGLE-2</span><div><div class="ptitle">EAGLE-2: Faster Inference with Dynamic Draft Trees</div><div class="pinfo">Li et al. · EMNLP 2024</div></div><a href="https://arxiv.org/abs/2406.16858">arXiv:2406.16858</a></div>
+  </div>
+  <div class="paper spec"><span class="pid">EAGLE-3</span><div><div class="ptitle">EAGLE-3: Scaling up Inference Acceleration via Training-Time Test Grid</div><div class="pinfo">Li et al. · 2025 · 训练时测试网格，支持推理模型，开源加速比领先</div></div><a href="https://arxiv.org/abs/2503.01840">arXiv:2503.01840</a></div>
+  <h3>MTP：把“多 token 预测”做进模型本体</h3>
+  <p>DeepSeek-V3 的 <strong>MTP（Multi-Token Prediction，多 token 预测）</strong>把投机能力直接做进模型：主模型之外串联若干 <strong>MTP 模块</strong>，每个模块接收上一位置的<strong>隐藏状态 + token embedding</strong>，预测下一个 token；训练时每个模块都作为额外的多任务预测损失（还能提升主模型质量），推理时这些模块自然形成一条<strong>候选链</strong>，再由主模型一次并行验证。DeepSeek-R1 推理即用 MTP 加速。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 220" role="img" aria-label="MTP 链式多 token 预测">
+      <defs><marker id="ar7" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit" text-anchor="middle">
+        <rect x="50" y="50" width="150" height="100" rx="12" fill="#23456f"/>
+        <text x="125" y="92" font-size="14" font-weight="800" fill="#fff">主模型</text><text x="125" y="116" font-size="11" fill="#cfe0f2">输出 h、token</text>
+        <rect x="270" y="50" width="140" height="100" rx="12" fill="#0d9488"/>
+        <text x="340" y="86" font-size="13.5" font-weight="800" fill="#fff">MTP 模块 1</text><text x="340" y="110" font-size="11" fill="#d4ece9">预测 +1 token</text>
+        <rect x="470" y="50" width="140" height="100" rx="12" fill="#0d9488"/>
+        <text x="540" y="86" font-size="13.5" font-weight="800" fill="#fff">MTP 模块 2</text><text x="540" y="110" font-size="11" fill="#d4ece9">预测 +2 token</text>
+        <g stroke="#3c4d66" stroke-width="2" fill="none" marker-end="url(#ar7)">
+          <line x1="200" y1="100" x2="266" y2="100"/><line x1="410" y1="100" x2="466" y2="100"/><line x1="610" y1="100" x2="666" y2="100"/>
+        </g>
+        <text x="233" y="90" font-size="10.5" fill="#3c4d66">h+emb</text><text x="438" y="90" font-size="10.5" fill="#3c4d66">h+emb</text>
+        <rect x="670" y="60" width="190" height="80" rx="10" fill="#fdeee2" stroke="#f3cdb4"/>
+        <text x="765" y="92" font-size="12.5" font-weight="700" fill="#e8590c">候选链一次并行验证</text>
+        <text x="765" y="114" font-size="11" fill="#d7541a">接受前缀，无损</text>
+        <text x="320" y="180" font-size="11.5" fill="#697a92">训练：MTP 作为多任务损失，同时提升主模型；推理：链式起草</text>
+      </g>
+    </svg>
+    <figcaption><b>图 19</b><span>MTP：主模型与 MTP 模块串联，沿“隐藏状态 + token”链式预测多个未来 token；训练即多任务学习、推理即候选链。相比外挂草稿，它与模型一体化、无额外模型维护成本（DeepSeek-V3/R1）。</span></figcaption>
+  </figure>
+  <div class="paper spec"><span class="pid">DSv3</span><div><div class="ptitle">DeepSeek-V3 Technical Report</div><div class="pinfo">DeepSeek-AI · 2024 · MTP 多 token 预测模块的设计、训练损失与推理用法（另含 61 层 MLA、FP8 训练、MoE 细节）</div></div><a href="https://arxiv.org/abs/2412.19437">arXiv:2412.19437</a></div>
+
+  <h3>Lookahead Decoding：零训练、零小模型的 Jacobi 并行</h3>
+  <p>Lookahead Decoding 完全不引入额外模型、也不做任何微调，而是用 <strong>Jacobi 迭代</strong>把“串行解码”变成<strong>对一个 2D 窗口的并行猜测</strong>：每条“猜测分支”在窗口内同时尝试多个未来位置（等价于并行 Jacobi 解码），每条“N-gram 分支”从历史维护的 <strong>n-gram 池</strong>里取候选序列验证、命中后回填池子。一次前向可能确认多个 token，未命中也无损退回。</p>
+  <figure class="fig">
+    <svg viewBox="0 0 900 260" role="img" aria-label="Lookahead decoding 二维窗口与 n-gram 池">
+      <defs><marker id="ar8" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit">
+        <text x="170" y="50" text-anchor="middle" font-size="12.5" font-weight="700" fill="#16233a">2D Jacobi 窗口（并行猜测）</text>
+        <g>
+          <!-- grid 5x4 x=80 step42 w38 y=66 step40 h30 -->
+          <g fill="#eef1f5">
+            <rect x="80" y="66" width="38" height="30" rx="4"/><rect x="122" y="66" width="38" height="30" rx="4"/><rect x="164" y="66" width="38" height="30" rx="4"/><rect x="206" y="66" width="38" height="30" rx="4"/><rect x="248" y="66" width="38" height="30" rx="4"/>
+            <rect x="80" y="106" width="38" height="30" rx="4"/><rect x="122" y="106" width="38" height="30" rx="4"/><rect x="164" y="106" width="38" height="30" rx="4"/><rect x="206" y="106" width="38" height="30" rx="4"/><rect x="248" y="106" width="38" height="30" rx="4"/>
+            <rect x="80" y="146" width="38" height="30" rx="4"/><rect x="122" y="146" width="38" height="30" rx="4"/><rect x="164" y="146" width="38" height="30" rx="4"/><rect x="206" y="146" width="38" height="30" rx="4"/><rect x="248" y="146" width="38" height="30" rx="4"/>
+          </g>
+          <!-- accepted green cells -->
+          <g fill="#0d9488"><rect x="80" y="186" width="38" height="30" rx="4"/><rect x="122" y="186" width="38" height="30" rx="4"/><rect x="164" y="186" width="38" height="30" rx="4"/></g>
+          <g fill="#fff" font-size="10.5" text-anchor="middle"><text x="99" y="206">The</text><text x="141" y="206">cat</text><text x="183" y="206">sat</text></g>
+        </g>
+        <line x1="310" y1="140" x2="356" y2="140" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar8)"/>
+        <!-- n-gram pool -->
+        <rect x="360" y="70" width="220" height="140" rx="12" fill="#fff" stroke="#94a3b8"/>
+        <text x="470" y="96" text-anchor="middle" font-size="12.5" font-weight="700" fill="#16233a">N-gram 池</text>
+        <g font-size="11" fill="#3c4d66" text-anchor="middle">
+          <rect x="378" y="108" width="184" height="24" rx="6" fill="#f4f7fa"/><text x="470" y="125">The cat sat ...</text>
+          <rect x="378" y="138" width="184" height="24" rx="6" fill="#f4f7fa"/><text x="470" y="155">a dog loves ...</text>
+          <rect x="378" y="168" width="184" height="24" rx="6" fill="#f4f7fa"/><text x="470" y="185">chasing after ...</text>
+        </g>
+        <line x1="580" y1="140" x2="626" y2="140" stroke="#3c4d66" stroke-width="2" marker-end="url(#ar8)"/>
+        <rect x="630" y="110" width="210" height="60" rx="10" fill="#e8590c"/>
+        <text x="735" y="136" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">确认的 token 直接输出</text>
+        <text x="735" y="156" text-anchor="middle" font-size="11" fill="#fde2d2">窗口向前滑动，继续猜测</text>
+        <text x="170" y="240" text-anchor="middle" font-size="11" fill="#697a92">Guess 分支 Jacobi 并行；无需训练 / 小模型</text>
+      </g>
+    </svg>
+    <figcaption><b>图 20</b><span>Lookahead：2D 窗口内 Guess 分支做 Jacobi 并行解码、N-gram 分支验证历史 n-gram 并回填；绿色为一次确认的 token。开箱即用、完全无损，适合不能改模型的部署场景。</span></figcaption>
+  </figure>
+  <div class="paper spec"><span class="pid">LOOKAHEAD</span><div><div class="ptitle">Break the Sequential Dependency of LLM Inference Using Lookahead Decoding</div><div class="pinfo">Fu et al. · Together AI · ICML 2024 · Jacobi 迭代 + n-gram 池，零训练并行解码</div></div><a href="https://arxiv.org/abs/2402.02057">arXiv:2402.02057</a></div>
+
+  <h3>家族全对比与选型</h3>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:14%"><col style="width:20%"><col style="width:16%"><col style="width:18%"><col style="width:16%"><col style="width:16%"></colgroup>
+      <thead><tr><th>方法</th><th>猜测者来源</th><th>需要训练</th><th>候选形态</th><th>典型加速</th><th>输出质量</th></tr></thead>
+      <tbody>
+        <tr><td>经典 Spec</td><td>独立小模型</td><td>否（用现成小模型）</td><td>单链</td><td>2–3×</td><td>无损</td></tr>
+        <tr><td>自投机</td><td>自身浅层早退</td><td>少量微调</td><td>单链</td><td>1.5–2×</td><td>无损</td></tr>
+        <tr><td>Medusa</td><td>新增多个候选头</td><td>训练新增头</td><td>候选树</td><td>2.2–3.6×</td><td>无损</td></tr>
+        <tr><td>EAGLE</td><td>特征起草头</td><td>训练头（2/3 动态/网格）</td><td>动态树</td><td>3–6×</td><td>无损</td></tr>
+        <tr><td>MTP</td><td>模型原生 MTP 模块</td><td>随主模型一起训练</td><td>链</td><td>~1.8–2×</td><td>无损</td></tr>
+        <tr><td>Lookahead</td><td>Jacobi 自身并行</td><td>完全不需要</td><td>2D 窗口 + n-gram</td><td>1.5–2×</td><td>无损</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <small class="note">加速比为各论文/开源报告的典型量级，强依赖于任务（代码/数学等高可预测任务更高）、草稿与目标的匹配度、batch 与硬件；请以自家业务实测为准。</small>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 300" role="img" aria-label="投机解码选型决策流程">
+      <g font-family="inherit">
+        <rect x="320" y="16" width="260" height="42" rx="10" fill="#16233a"/>
+        <text x="450" y="43" text-anchor="middle" font-size="13" fill="#fff" font-weight="700">能否修改 / 训练目标模型？</text>
+        <!-- No branch -->
+        <line x1="380" y1="58" x2="150" y2="96" stroke="#94a3b8" stroke-width="2"/>
+        <rect x="50" y="96" width="210" height="42" rx="10" fill="#e7eff9" stroke="#94a3b8"/>
+        <text x="155" y="123" text-anchor="middle" font-size="12.5" fill="#16233a" font-weight="700">有匹配的小模型？</text>
+        <line x1="120" y1="138" x2="110" y2="176" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="190" y1="138" x2="300" y2="176" stroke="#94a3b8" stroke-width="2"/>
+        <rect x="30" y="178" width="170" height="42" rx="10" fill="#0d9488"/><text x="115" y="204" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">经典 Spec Decoding</text>
+        <rect x="220" y="178" width="160" height="42" rx="10" fill="#0d9488"/><text x="300" y="204" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">Lookahead（零训练）</text>
+        <!-- Yes branch -->
+        <line x1="520" y1="58" x2="600" y2="96" stroke="#94a3b8" stroke-width="2"/>
+        <rect x="470" y="96" width="260" height="42" rx="10" fill="#e7eff9" stroke="#94a3b8"/>
+        <text x="600" y="123" text-anchor="middle" font-size="12.5" fill="#16233a" font-weight="700">训练预算 / 可加结构？</text>
+        <line x1="540" y1="138" x2="500" y2="176" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="600" y1="138" x2="640" y2="176" stroke="#94a3b8" stroke-width="2"/>
+        <line x1="660" y1="138" x2="780" y2="176" stroke="#94a3b8" stroke-width="2"/>
+        <rect x="430" y="178" width="150" height="42" rx="10" fill="#e8590c"/><text x="505" y="204" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">Medusa / EAGLE</text>
+        <rect x="585" y="178" width="120" height="42" rx="10" fill="#e8590c"/><text x="645" y="204" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">MTP（原生）</text>
+        <rect x="715" y="178" width="140" height="42" rx="10" fill="#e8590c"/><text x="785" y="204" text-anchor="middle" font-size="12" fill="#fff" font-weight="700">自投机（早退）</text>
+        <text x="450" y="256" text-anchor="middle" font-size="12" fill="#3c4d66">全部<strong>无损</strong>；结构化输出再叠加约束解码；推理（reasoning）模型优先 EAGLE-3 / 原生 MTP</text>
+        <text x="450" y="278" text-anchor="middle" font-size="11.5" fill="#697a92">高并发服务端：投机与 PD 分离、Continuous Batching 可叠加使用</text>
+      </g>
+    </svg>
+    <figcaption><b>图 21</b><span>选型决策：先看“能不能改模型”，再看训练预算与可加结构；不能改就走 Lookahead / 经典投机，能改则按改动量选自投机、Medusa/EAGLE 或原生 MTP。</span></figcaption>
+  </figure>
+</section>
+<!-- ================= 第 7 章 ================= -->
+<section id="ch7" class="wrap">
+  <div class="sec-head"><span class="sec-no">07</span><h2>长上下文：KV 压缩与驱逐</h2><span class="sub">KV EVICTION</span></div>
+  <p>KV Cache 随序列线性膨胀，长上下文下甚至超过权重。但注意力本身是<strong>高度稀疏</strong>的：实证表明，生成时 <strong>95% 以上的历史 token 几乎从未被高权重关注</strong>，真正反复被“看”的只有少数“关键 token”（Heavy Hitters）加上最近的一小段。这给了我们<strong>主动丢弃低价值 KV</strong>的空间（属有损压缩，需控制比例以保质量）。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 300" role="img" aria-label="注意力稀疏性与 H2O SnapKV 时机">
+      <g font-family="inherit">
+        <text x="40" y="40" font-size="13" font-weight="700" fill="#16233a">注意力权重（生成某 token 时对历史的关注）</text>
+        <!-- heatmap 24 cells x=80 step32 w30 y=52 h=28 -->
+        <g>
+          <g fill="#dfe5ec">
+            <rect x="80" y="52" width="30" height="28" rx="3"/><rect x="112" y="52" width="30" height="28" rx="3"/><rect x="144" y="52" width="30" height="28" rx="3"/><rect x="176" y="52" width="30" height="28" rx="3"/><rect x="208" y="52" width="30" height="28" rx="3"/><rect x="240" y="52" width="30" height="28" rx="3"/><rect x="272" y="52" width="30" height="28" rx="3"/><rect x="304" y="52" width="30" height="28" rx="3"/><rect x="336" y="52" width="30" height="28" rx="3"/><rect x="368" y="52" width="30" height="28" rx="3"/><rect x="400" y="52" width="30" height="28" rx="3"/><rect x="432" y="52" width="30" height="28" rx="3"/><rect x="464" y="52" width="30" height="28" rx="3"/><rect x="496" y="52" width="30" height="28" rx="3"/><rect x="528" y="52" width="30" height="28" rx="3"/><rect x="560" y="52" width="30" height="28" rx="3"/><rect x="592" y="52" width="30" height="28" rx="3"/><rect x="624" y="52" width="30" height="28" rx="3"/><rect x="656" y="52" width="30" height="28" rx="3"/><rect x="688" y="52" width="30" height="28" rx="3"/><rect x="720" y="52" width="30" height="28" rx="3"/><rect x="752" y="52" width="30" height="28" rx="3"/><rect x="784" y="52" width="30" height="28" rx="3"/>
+          </g>
+          <!-- bright heavy hitters -->
+          <g fill="#e8590c"><rect x="144" y="52" width="30" height="28" rx="3"/><rect x="464" y="52" width="30" height="28" rx="3"/><rect x="720" y="52" width="30" height="28" rx="3"/></g>
+          <text x="830" y="72" text-anchor="end" font-size="11" fill="#e8590c" font-weight="700">少数关键 token</text>
+          <text x="450" y="106" text-anchor="middle" font-size="11.5" fill="#697a92">&gt;95% 历史 token 注意力权重接近 0，驱逐它们对结果影响很小</text>
+        </g>
+        <line x1="450" y1="124" x2="450" y2="286" stroke="#d7dee8" stroke-dasharray="5 5"/>
+        <!-- H2O -->
+        <text x="225" y="140" text-anchor="middle" font-size="13.5" font-weight="800" fill="#23456f">H2O：边生成、边驱逐</text>
+        <g text-anchor="middle" font-size="10.5">
+          <text x="150" y="170" fill="#e8590c" font-weight="700">Heavy Hitters 保留</text>
+          <g fill="#e8590c"><rect x="92" y="178" width="30" height="24" rx="4"/><rect x="126" y="178" width="30" height="24" rx="4"/><rect x="160" y="178" width="30" height="24" rx="4"/></g>
+          <text x="290" y="170" fill="#0d9488" font-weight="700">Recent 窗口</text>
+          <g fill="#0d9488"><rect x="232" y="178" width="30" height="24" rx="4"/><rect x="266" y="178" width="30" height="24" rx="4"/><rect x="300" y="178" width="30" height="24" rx="4"/><rect x="334" y="178" width="30" height="24" rx="4"/></g>
+        </g>
+        <text x="225" y="230" text-anchor="middle" font-size="11.5" fill="#3c4d66">每步按累计注意力淘汰低分 KV</text>
+        <text x="225" y="250" text-anchor="middle" font-size="11.5" fill="#e8590c" font-weight="700">KV 显存恒定（bounded），适合长生成</text>
+        <text x="225" y="276" text-anchor="middle" font-size="11" fill="#697a92">训练免费、即插即用</text>
+        <!-- SnapKV -->
+        <text x="675" y="140" text-anchor="middle" font-size="13.5" font-weight="800" fill="#23456f">SnapKV：Prefill 末一次压缩</text>
+        <g text-anchor="middle" font-size="10.5">
+          <rect x="492" y="166" width="80" height="40" rx="8" fill="#23456f"/><text x="532" y="190" fill="#fff">Prefill</text>
+          <g fill="#0d9488"><rect x="580" y="172" width="24" height="28" rx="4"/><rect x="606" y="172" width="24" height="28" rx="4"/><rect x="632" y="172" width="24" height="28" rx="4"/></g>
+          <text x="621" y="224" fill="#0d9488" font-weight="700">观察窗口投票</text>
+          <rect x="668" y="166" width="56" height="40" rx="8" fill="#b9832b"/><text x="696" y="190" fill="#fff">压缩</text>
+          <rect x="732" y="166" width="100" height="40" rx="8" fill="#2f6fb0"/><text x="782" y="190" fill="#fff">Decode</text>
+        </g>
+        <text x="675" y="250" text-anchor="middle" font-size="11.5" fill="#e8590c" font-weight="700">长 prompt 一次瘦身，近无损</text>
+        <text x="675" y="276" text-anchor="middle" font-size="11" fill="#697a92">适合 RAG / 长文档，可配合 prompt 缓存</text>
+      </g>
+    </svg>
+    <figcaption><b>图 22</b><span>上：注意力稀疏、只有少数关键 token 被反复关注；左下 H2O 在生成中持续保留 Heavy Hitter + 最近窗口、KV 总量恒定；右下 SnapKV 用 prefill 末尾观察窗口投票、在生成前一次性压缩。</span></figcaption>
+  </figure>
+
+  <h3>H2O：Heavy-Hitter Oracle</h3>
+  <p>H2O 观察到一个规律：<strong>历史贡献（累计注意力得分）高的 token，未来也更可能被需要</strong>。它在每步维护一个固定大小的 KV 池，保留“累计注意力最高的 Heavy Hitter”加“最近窗口”，其余直接驱逐，从而把 KV Cache 变成<strong>有上界</strong>的滚动窗口，训练免费、可直接嵌入任意引擎。</p>
+  <div class="paper"><span class="pid">H2O</span><div><div class="ptitle">H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models</div><div class="pinfo">Zhang, Zhang, Mirzadeh et al. · NeurIPS 2023 · 边生成边驱逐，KV 显存大幅下降、质量可控</div></div><a href="https://arxiv.org/abs/2306.14048">arXiv:2306.14048</a></div>
+
+  <h3>SnapKV：生成前“一次看对眼”</h3>
+  <p>SnapKV 利用 prefill 末尾若干 query 位置（观察窗口）对各历史 KV 的注意力作为<strong>投票</strong>，选出对当前任务真正重要的 KV 位置，在 Decode 开始前<strong>一次性批量压缩</strong>。它特别契合长 prompt / RAG 场景——大量无关文档块可以在生成前就被丢掉，且因为依据的是真实任务相关的投票，压缩近无损。</p>
+  <div class="paper"><span class="pid">SnapKV</span><div><div class="ptitle">SnapKV: LLM Knows What You Are Looking for Before Generation</div><div class="pinfo">Li et al. · NeurIPS 2024 · 观察窗口加权投票 + 生成前一次压缩</div></div><a href="https://arxiv.org/abs/2404.14469">arXiv:2404.14469</a></div>
+
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:16%"><col style="width:30%"><col style="width:28%"><col style="width:26%"></colgroup>
+      <thead><tr><th>对比</th><th>H2O</th><th>SnapKV</th><th>KIVI（前述）</th></tr></thead>
+      <tbody>
+        <tr><td>压缩手段</td><td>整段丢弃低价值 KV</td><td>整段丢弃（投票选块）</td><td>保留全部、降低每元素位宽</td></tr>
+        <tr><td>时机</td><td>Decode 中持续驱逐</td><td>Prefill 末、Decode 前一次</td><td>全程量化</td></tr>
+        <tr><td>判据</td><td>累计注意力 Heavy Hitter + 最近</td><td>末尾观察窗口注意力投票</td><td>key 按通道 / value 按 token</td></tr>
+        <tr><td>最适合</td><td>超长生成、流式对话</td><td>长 prompt / RAG</td><td>通用、与其他方法叠加</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout c-teal"><span class="ct">可叠加，不互斥</span><p>分页（PagedAttention）解决“放得下”，驱逐（H2O/SnapKV）与量化（KIVI）解决“装得少”，前缀树（RadixAttention）解决“能复用”——三者在现代引擎里通常<strong>同时开启</strong>。</p></div>
+</section>
+<!-- ================= 第 8 章 ================= -->
+<section id="ch8" class="wrap">
+  <div class="sec-head"><span class="sec-no">08</span><h2>结构化输出：约束解码</h2><span class="sub">CONSTRAINED DECODING</span></div>
+  <p>做后端最常需要模型输出 JSON、代码、函数调用参数等<strong>有严格格式</strong>的结果。但自由采样可能在任意位置混入非法字符（缺括号、多余逗号、枚举值乱写），下游解析直接失败。<strong>约束解码（Constrained / Guided Decoding）</strong>在每一步采样前，根据目标文法（JSON Schema、正则、BNF、正则表达式）判断<strong>当前状态下哪些 token 合法</strong>，把非法 token 的 logit 屏蔽为 $-\infty$，只在合法集合里采样，从机制上保证输出 100% 可解析。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 290" role="img" aria-label="约束解码状态机与 logit 屏蔽">
+      <defs><marker id="ar9" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#3c4d66"/></marker></defs>
+      <g font-family="inherit">
+        <text x="40" y="40" font-size="13" font-weight="700" fill="#16233a">文法编译为状态机（FSM / PDA）</text>
+        <!-- states -->
+        <g text-anchor="middle">
+          <circle cx="110" cy="96" r="28" fill="#e2f1ef" stroke="#0d9488" stroke-width="2"/><text x="110" y="92" font-size="11" fill="#0d9488" font-weight="700">START</text><text x="110" y="106" font-size="9" fill="#697a92">状态0</text>
+          <circle cx="290" cy="96" r="28" fill="#23456f"/><text x="290" y="101" font-size="12" fill="#fff" font-weight="700">{</text>
+          <circle cx="470" cy="96" r="28" fill="#e2f1ef" stroke="#0d9488"/><text x="470" y="92" font-size="10.5" fill="#0d9488" font-weight="700">key</text><text x="470" y="106" font-size="9" fill="#697a92">"..."</text>
+          <circle cx="650" cy="96" r="28" fill="#e2f1ef" stroke="#0d9488"/><text x="650" y="92" font-size="10.5" fill="#0d9488" font-weight="700">:</text><text x="650" y="106" font-size="9" fill="#697a92">value</text>
+          <circle cx="800" cy="96" r="28" fill="#e2f1ef" stroke="#0d9488"/><text x="800" y="101" font-size="11" fill="#0d9488" font-weight="700">}</text>
+          <g stroke="#3c4d66" stroke-width="1.8" fill="none" marker-end="url(#ar9)">
+            <line x1="138" y1="96" x2="260" y2="96"/><line x1="318" y1="96" x2="440" y2="96"/>
+            <line x1="498" y1="96" x2="620" y2="96"/><line x1="678" y1="96" x2="770" y2="96"/>
+          </g>
+          <text x="199" y="84" font-size="10" fill="#697a92">{</text><text x="379" y="84" font-size="10" fill="#697a92">合法key</text><text x="559" y="84" font-size="10" fill="#697a92">:</text><text x="724" y="84" font-size="10" fill="#697a92">合法value</text>
+        </g>
+        <line x1="40" y1="146" x2="880" y2="146" stroke="#d7dee8"/>
+        <text x="40" y="172" font-size="13" font-weight="700" fill="#16233a">下一步 logit：非法 token 屏蔽为 −∞</text>
+        <!-- bars, baseline y=250, x=110 step62 w34 -->
+        <g>
+          <line x1="90" y1="250" x2="820" y2="250" stroke="#94a3b8"/>
+          <!-- legal -->
+          <rect x="110" y="196" width="34" height="54" rx="4" fill="#2f6fb0"/>
+          <rect x="172" y="214" width="34" height="36" rx="4" fill="#0d9488"/>
+          <!-- illegal gray with X -->
+          <g fill="#dfe5ec">
+            <rect x="234" y="186" width="34" height="64" rx="4"/><rect x="296" y="206" width="34" height="44" rx="4"/><rect x="358" y="192" width="34" height="58" rx="4"/><rect x="420" y="200" width="34" height="50" rx="4"/><rect x="482" y="184" width="34" height="66" rx="4"/><rect x="544" y="208" width="34" height="42" rx="4"/><rect x="606" y="196" width="34" height="54" rx="4"/><rect x="668" y="210" width="34" height="40" rx="4"/><rect x="730" y="190" width="34" height="60" rx="4"/>
+          </g>
+          <g stroke="#d7541a" stroke-width="2.4">
+            <line x1="240" y1="192" x2="262" y2="244"/><line x1="262" y1="192" x2="240" y2="244"/>
+            <line x1="302" y1="212" x2="324" y2="244"/><line x1="324" y1="212" x2="302" y2="244"/>
+            <line x1="364" y1="198" x2="386" y2="244"/><line x1="386" y1="198" x2="364" y2="244"/>
+            <line x1="426" y1="206" x2="448" y2="244"/><line x1="448" y1="206" x2="426" y2="244"/>
+            <line x1="488" y1="190" x2="510" y2="244"/><line x1="510" y1="190" x2="488" y2="244"/>
+            <line x1="550" y1="214" x2="572" y2="244"/><line x1="572" y1="214" x2="550" y2="244"/>
+            <line x1="612" y1="202" x2="634" y2="244"/><line x1="634" y1="202" x2="612" y2="244"/>
+            <line x1="674" y1="216" x2="696" y2="244"/><line x1="696" y1="216" x2="674" y2="244"/>
+            <line x1="736" y1="196" x2="758" y2="244"/><line x1="758" y1="196" x2="736" y2="244"/>
+          </g>
+          <text x="127" y="270" text-anchor="middle" font-size="10.5" fill="#2f6fb0" font-weight="700">合法</text>
+          <text x="189" y="270" text-anchor="middle" font-size="10.5" fill="#0d9488" font-weight="700">合法</text>
+          <text x="500" y="270" text-anchor="middle" font-size="11" fill="#d7541a" font-weight="700">非法 token：logit = −∞，概率 0</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption><b>图 23</b><span>约束解码：文法先编译成状态机（上），每步根据当前状态确定合法 token 集合；在 logit 层把非法位置屏蔽（下），采样只在合法集合中进行。输出从“概率上像”升级为“机制上必然合法”。</span></figcaption>
+  </figure>
+
+  <h3>主流工具链</h3>
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:18%"><col style="width:42%"><col style="width:40%"></colgroup>
+      <thead><tr><th>工具</th><th>原理 / 能力</th><th>典型集成</th></tr></thead>
+      <tbody>
+        <tr><td>Outlines</td><td>把 JSON Schema / 正则 / 文法编译成有限状态，提供 logit processor，支持 PDA</td><td>自研服务、HuggingFace 生态</td></tr>
+        <tr><td>XGrammar</td><td>高性能结构化生成引擎：文法即时编译、掩码缓存、jump-forward 跳过强制 token，开销极低</td><td>SGLang、MLX、vLLM 系</td></tr>
+        <tr><td>GBNF</td><td>llama.cpp 的类 BNF 文法格式，本地/端侧约束生成</td><td>llama.cpp、Ollama</td></tr>
+        <tr><td>GCD</td><td>文法约束解码，用 FST 在结构化任务上免微调约束输出（学术源头之一）</td><td>研究 / 基线</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="grid2">
+    <div class="paper sys"><span class="pid">OUTLINES</span><div><div class="ptitle">Efficient Guided Generation for Large Language Models</div><div class="pinfo">Willard &amp; Louf · 2023 · Outlines 的状态机 / 正则引导生成</div></div><a href="https://arxiv.org/abs/2307.09702">arXiv:2307.09702</a></div>
+    <div class="paper sys"><span class="pid">XGrammar</span><div><div class="ptitle">XGrammar: Flexible and Efficient Structured Generation Engine for LLMs</div><div class="pinfo">Dong et al · 2024 · 高效文法编译与掩码执行</div></div><a href="https://arxiv.org/abs/2411.15100">arXiv:2411.15100</a></div>
+  </div>
+  <div class="paper sys"><span class="pid">GCD</span><div><div class="ptitle">Grammar-Constrained Decoding for Structured NLP Tasks without Finetuning</div><div class="pinfo">Geng et al. · EMNLP 2023 · 文法约束解码早期系统工作</div></div><a href="https://arxiv.org/abs/2305.13971">arXiv:2305.13971</a></div>
+
+  <div class="callout c-gold"><span class="ct">两个工程提醒</span><p>① 当合法 token 恰好是模型很不想要的 token 时，约束会“硬逼”模型走低概率路径，可能导致重复或质量下降——应让提示词与目标格式对齐、并设置合理停止条件；② 约束解码<strong>与投机解码、连续批处理不冲突</strong>，但需要在验证阶段同样施加约束掩码。</p></div>
+</section>
+<!-- ================= 采样速览 ================= -->
+<section id="sampling" class="wrap">
+  <div class="sec-head"><span class="sec-no">08+</span><h2>补充：解码采样策略速览</h2><span class="sub">SAMPLING KNOBS</span></div>
+  <p>所有解码最后都要回答一个问题：<strong>从 logits 里选哪个 token</strong>。确定性方法选概率最大的，随机方法按分布采样，再用一组“旋钮”调节随机性与重复度。这部分是推理的“常识底座”，一图一表带过。</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 900 230" role="img" aria-label="温度 TopK TopP 示意">
+      <line x1="450" y1="20" x2="450" y2="200" stroke="#d7dee8" stroke-dasharray="5 5"/>
+      <g font-family="inherit" text-anchor="middle">
+        <text x="225" y="36" font-size="12.5" font-weight="700" fill="#16233a">温度 T：改变分布尖锐度</text>
+        <!-- 3 rows, bars start x=130 step30 w26 -->
+        <g fill="#23456f">
+          <!-- T=.5 baseline y=72 -->
+          <rect x="130" y="26" width="26" height="46" rx="3"/><rect x="160" y="60" width="26" height="12" rx="3"/><rect x="190" y="64" width="26" height="8" rx="3"/><rect x="220" y="66" width="26" height="6" rx="3"/><rect x="250" y="68" width="26" height="4" rx="3"/>
+          <!-- T=1 baseline y=124 -->
+          <rect x="130" y="90" width="26" height="34" rx="3"/><rect x="160" y="104" width="26" height="20" rx="3"/><rect x="190" y="110" width="26" height="14" rx="3"/><rect x="220" y="114" width="26" height="10" rx="3"/><rect x="250" y="118" width="26" height="6" rx="3"/>
+          <!-- T=2 baseline y=176 -->
+          <rect x="130" y="160" width="26" height="16" rx="3"/><rect x="160" y="162" width="26" height="14" rx="3"/><rect x="190" y="164" width="26" height="12" rx="3"/><rect x="220" y="166" width="26" height="10" rx="3"/><rect x="250" y="168" width="26" height="8" rx="3"/>
+        </g>
+        <g font-size="10.5" fill="#697a92" text-anchor="end">
+          <text x="120" y="56">T=0.5 集中</text><text x="120" y="108">T=1 原始</text><text x="120" y="172">T=2 平坦</text>
+        </g>
+        <!-- right top-k/top-p, bars baseline y=170 x=490 step40 w28 -->
+        <text x="680" y="36" font-size="12.5" font-weight="700" fill="#16233a">Top-K / Top-P：截断候选</text>
+        <g fill="#2f6fb0">
+          <rect x="490" y="114" width="28" height="56" rx="3"/><rect x="530" y="130" width="28" height="40" rx="3"/><rect x="570" y="142" width="28" height="28" rx="3"/>
+        </g>
+        <g fill="#94a3b8">
+          <rect x="610" y="152" width="28" height="18" rx="3"/><rect x="650" y="158" width="28" height="12" rx="3"/><rect x="690" y="162" width="28" height="8" rx="3"/><rect x="730" y="164" width="28" height="6" rx="3"/><rect x="770" y="166" width="28" height="4" rx="3"/>
+        </g>
+        <line x1="610" y1="104" x2="610" y2="176" stroke="#e8590c" stroke-width="2"/>
+        <text x="610" y="96" text-anchor="middle" font-size="10.5" fill="#e8590c" font-weight="700">Top-K=3</text>
+        <g stroke="#b9832b" stroke-width="2"><line x1="650" y1="126" x2="650" y2="176"/></g>
+        <text x="660" y="120" text-anchor="start" font-size="10.5" fill="#b9832b" font-weight="700">Top-P≈0.9（前4个累计）</text>
+        <line x1="480" y1="170" x2="810" y2="170" stroke="#94a3b8"/>
+        <text x="680" y="198" text-anchor="middle" font-size="11" fill="#697a92">候选按概率排序，截断后重新归一化再采样</text>
+      </g>
+    </svg>
+    <figcaption><b>图 24</b><span>左：温度对 softmax 的影响，$p_i\propto e^{z_i/T}$，T 越低越确定、越高越发散；右：Top-K 固定只在前 K 个候选采样，Top-P（nucleus）按累计概率动态截断——候选少而尖时少取、多而平时多取。</span></figcaption>
+  </figure>
+
+  <div class="tbl-scroll">
+    <table>
+      <colgroup><col style="width:18%"><col style="width:52%"><col style="width="30%"></colgroup>
+      <thead><tr><th>策略</th><th>做法 / 效果</th><th>典型场景</th></tr></thead>
+      <tbody>
+        <tr><td>贪心 Greedy</td><td>每步取 logit 最大的 token，确定性、可复现，但容易重复、缺乏多样性</td><td>事实问答、评测</td></tr>
+        <tr><td>Beam Search</td><td>同时保留 B 条累计概率最高的部分序列，最后选最优；质量高但开销大、不利于流式</td><td>翻译/摘要（离线）</td></tr>
+        <tr><td>温度 Temperature</td><td>采样前缩放 logits，控制创造性与随机性</td><td>对话/创作</td></tr>
+        <tr><td>Top-K / Top-P</td><td>限制采样候选范围，过滤长尾低质 token，二者常一起用</td><td>通用聊天默认</td></tr>
+        <tr><td>存在惩罚 Presence</td><td>token 一旦出现就给其 logit 减一个<strong>固定</strong>值，鼓励引入新话题</td><td>长文防单调</td></tr>
+        <tr><td>频率惩罚 Frequency</td><td>按 token 已出现<strong>次数</strong>成比例减 logit，抑制重复与复读</td><td>防重复（代码慎用）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <small class="note">惩罚项在 softmax 之前加到 logit 上（取值常为 −2~2，正值抑制、负值鼓励）；代码生成场景一般关闭频率惩罚，以免合法的重复变量名被误伤。</small>
+</section>
+<!-- ================= 第 9 章 ================= -->
+<section id="ch9" class="wrap">
+  <div class="sec-head"><span class="sec-no">09</span><h2>总结、落地清单与前沿趋势</h2><span class="sub">SUMMARY &amp; OUTLOOK</span></div>
+
+  <h3>一句话串起全文</h3>
+  <p>大模型推理的本质是<strong>自回归 + 重复计算 + 显存墙</strong>；所有加速都沿五条线展开——<strong>算子</strong>（FlashAttention 把注意力焊在片上）、<strong>显存</strong>（KV Cache + 分页 + GQA/MLA + 量化/驱逐）、<strong>调度</strong>（Continuous Batching + Chunked Prefill + 前缀复用）、<strong>架构</strong>（PD 分离与异构）、<strong>解码算法</strong>（投机解码家族打破串行、约束解码保证格式）。它们大多<strong>无损、可叠加</strong>，最终目标是在 SLO 达标前提下最大化 Goodput、最小化每 token 成本。</p>
+
+  <h3>工程落地 Checklist</h3>
+  <div class="grid2">
+    <div>
+      <h4>显存与模型</h4>
+      <ul class="check">
+        <li>优先选 GQA / MLA 架构，从源头减小 KV</li>
+        <li>开启 PagedAttention 分页，设合理 block（如 16）</li>
+        <li>权重 FP8 / AWQ、KV 上 KIVI（FP8/INT8）</li>
+        <li>长上下文叠加 H2O / SnapKV 驱逐</li>
+      </ul>
+      <h4>调度与服务</h4>
+      <ul class="check">
+        <li>Continuous Batching 取代静态批处理</li>
+        <li>Chunked Prefill，调 chunk size 平衡 TTFT/ITL</li>
+        <li>RadixAttention 前缀缓存（多轮/Agent）</li>
+        <li>SLO 感知调度、限流与显存水位保护</li>
+      </ul>
+    </div>
+    <div>
+      <h4>架构与互联</h4>
+      <ul class="check">
+        <li>高负载上 PD 分离，两池独立配比</li>
+        <li>KV 走 RDMA / NVLink / NIXL，传输计算重叠</li>
+        <li>构建 GPU/CPU/SSD 多级 KV Pool</li>
+        <li>按 Splitwise 思路做异构降本</li>
+      </ul>
+      <h4>解码与可观测</h4>
+      <ul class="check">
+        <li>按决策图选投机方案（EAGLE/MTP/Lookahead）</li>
+        <li>结构化输出上约束解码</li>
+        <li>监控 TTFT / ITL P99 / TPS / Goodput</li>
+        <li>监控 KV 命中率、驱逐率与显存碎片</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>前沿趋势（2025–2026）</h3>
+  <ol>
+    <li><strong>PD 分离“标配化”</strong>：NVIDIA Dynamo + NIXL、vLLM/SGLang/Mooncake 全部内置，分离架构成为大规模部署默认项。</li>
+    <li><strong>KV Cache 成为一等公民</strong>：跨节点/跨层级（GPU/CPU/SSD）池化、持久化、按需复用甚至单独计费，系统设计从“以计算为中心”转向<strong>“以 KV 为中心”</strong>。</li>
+    <li><strong>推理（Reasoning / 思考）模型普及</strong>：长 thinking 阶段让 Prefill/Decode 比例剧变，Chunked Prefill、PD 配比与<strong>面向推理模型的投机解码（EAGLE-3 等）</strong>成为新重点。</li>
+    <li><strong>MoE / EP 推理性价比</strong>：大参数、小激活（如 Qwen3-30B-A3B），需要 expert 并行、All-to-All 通信与专家负载均衡配套。</li>
+    <li><strong>测试时计算（Test-Time Compute）</strong>：多路径采样、树/并行验证、自评估与搜索进入推理引擎，天然依赖 Tree Attention 与批量验证能力。</li>
+    <li><strong>硬件与精度</strong>：GB200 NVL72 把整机做成一个 NVLink 域、HBM3e 与 FP8/FP4 普及，带宽与互联持续抬高 Roofline 屋顶。</li>
+    <li><strong>引擎能力收敛</strong>：vLLM、SGLang、TensorRT-LLM 在分页、前缀、PD、投机上能力趋同，竞争转向调度智能、异构支持与端到端成本。</li>
+  </ol>
+  <div class="callout c-key"><span class="ct">对我（后端转 AI Infra）的启示</span><p>这是一个<strong>“系统工程 + 算法理解”双密集</strong>的方向：后端的并发、缓存、调度、内存管理经验几乎都能平移（分页=虚拟内存、Continuous Batching=动态线程池、PD 分离=读写分离、前缀树=连接复用），但必须补上对 Transformer 计算特征与论文方法的理解。这也是本次系统读论文、做图文梳理的原因。</p></div>
+  <h3>建议的读论文顺序</h3>
+  <ol>
+    <li>打地基：<a href="https://arxiv.org/abs/1706.03762">Transformer</a> → <a href="https://arxiv.org/abs/2205.14135">FlashAttention</a></li>
+    <li>显存与服务：<a href="https://arxiv.org/abs/2309.06180">vLLM/PagedAttention</a> → <a href="https://arxiv.org/abs/2312.07104">SGLang</a> → <a href="https://arxiv.org/abs/2403.02310">Sarathi-Serve</a></li>
+    <li>架构：<a href="https://arxiv.org/abs/2401.09670">DistServe</a> → <a href="https://arxiv.org/abs/2407.00079">Mooncake</a> → <a href="https://arxiv.org/abs/2311.18677">Splitwise</a></li>
+    <li>解码算法：<a href="https://arxiv.org/abs/2211.17192">Speculative Decoding</a> → <a href="https://arxiv.org/abs/2401.10774">Medusa</a> → <a href="https://arxiv.org/abs/2401.15077">EAGLE</a>（→2→3）→ <a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 MTP</a> → <a href="https://arxiv.org/abs/2402.02057">Lookahead</a></li>
+    <li>压缩与结构化：<a href="https://arxiv.org/abs/2306.14048">H2O</a> → <a href="https://arxiv.org/abs/2404.14469">SnapKV</a> → <a href="https://arxiv.org/abs/2411.15100">XGrammar</a></li>
+  </ol>
+
+  <h3>参考文献</h3>
+  <ol class="refs">
+    <li><span class="rt">Attention Is All You Need</span><span class="rv">Vaswani et al. · NeurIPS 2017 · Transformer 原始论文</span><a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a></li>
+    <li><span class="rt">Fast Transformer Decoding: One Write-Head is All You Need (MQA)</span><span class="rv">Shazeer · 2019</span><a href="https://arxiv.org/abs/1911.02150">arXiv:1911.02150</a></li>
+    <li><span class="rt">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</span><span class="rv">Ainslie et al. · EMNLP 2023</span><a href="https://arxiv.org/abs/2305.13245">arXiv:2305.13245</a></li>
+    <li><span class="rt">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</span><span class="rv">Dao et al. · NeurIPS 2022</span><a href="https://arxiv.org/abs/2205.14135">arXiv:2205.14135</a></li>
+    <li><span class="rt">FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning</span><span class="rv">Dao · 2023</span><a href="https://arxiv.org/abs/2307.08691">arXiv:2307.08691</a></li>
+    <li><span class="rt">FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision</span><span class="rv">Shah et al. · NeurIPS 2024</span><a href="https://arxiv.org/abs/2407.08608">arXiv:2407.08608</a></li>
+    <li><span class="rt">Orca: A Distributed Serving System for Transformer-Based Generative Models</span><span class="rv">Yu et al. · OSDI 2022 · iteration-level 调度源头</span><a href="https://www.usenix.org/conference/osdi22/presentation/yu">USENIX OSDI&apos;22</a></li>
+    <li><span class="rt">Efficient Memory Management for LLM Serving with PagedAttention (vLLM)</span><span class="rv">Kwon et al. · SOSP 2023</span><a href="https://arxiv.org/abs/2309.06180">arXiv:2309.06180</a></li>
+    <li><span class="rt">Sarathi: Efficient LLM Inference by Pipelining Token Computation</span><span class="rv">Agrawal et al. · 2023 · Chunked Prefill</span><a href="https://arxiv.org/abs/2308.16369">arXiv:2308.16369</a></li>
+    <li><span class="rt">Sarathi-Serve: Chase Away Prefix Queue Under Chunked Prefills</span><span class="rv">Agrawal et al. · OSDI 2024</span><a href="https://arxiv.org/abs/2403.02310">arXiv:2403.02310</a></li>
+    <li><span class="rt">SGLang: Efficient Execution of Structured Language Model Programs (RadixAttention)</span><span class="rv">Zheng et al. · NeurIPS 2024/2025</span><a href="https://arxiv.org/abs/2312.07104">arXiv:2312.07104</a></li>
+    <li><span class="rt">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized LLM Serving</span><span class="rv">Zhong et al. · OSDI 2024</span><a href="https://arxiv.org/abs/2401.09670">arXiv:2401.09670</a></li>
+    <li><span class="rt">Splitwise: Efficient Generative LLM Inference Using Phase Splitting</span><span class="rv">Patel, Choukse et al. · ISCA 2024</span><a href="https://arxiv.org/abs/2311.18677">arXiv:2311.18677</a></li>
+    <li><span class="rt">Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving</span><span class="rv">Qin et al. · 2024 / ACM TOS 2025</span><a href="https://arxiv.org/abs/2407.00079">arXiv:2407.00079</a></li>
+    <li><span class="rt">NVIDIA Dynamo：开源分布式推理编排框架（含 NIXL KV 传输）</span><span class="rv">NVIDIA · 2025 · PD 分离产品化</span><a href="https://github.com/ai-dynamo/dynamo">github.com/ai-dynamo/dynamo</a></li>
+    <li><span class="rt">Fast Inference from Transformers via Speculative Decoding</span><span class="rv">Leviathan, Kalman, Matias · ICML 2023</span><a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a></li>
+    <li><span class="rt">Accelerating LLM Decoding with Speculative Sampling</span><span class="rv">Chen et al. · DeepMind · 2023</span><a href="https://arxiv.org/abs/2302.01318">arXiv:2302.01318</a></li>
+    <li><span class="rt">Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads</span><span class="rv">Cai et al. · ICML 2024</span><a href="https://arxiv.org/abs/2401.10774">arXiv:2401.10774</a></li>
+    <li><span class="rt">EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty</span><span class="rv">Li et al. · ICML 2024</span><a href="https://arxiv.org/abs/2401.15077">arXiv:2401.15077</a></li>
+    <li><span class="rt">EAGLE-2: Faster Inference of Language Models with Dynamic Draft Trees</span><span class="rv">Li et al. · EMNLP 2024</span><a href="https://arxiv.org/abs/2406.16858">arXiv:2406.16858</a></li>
+    <li><span class="rt">EAGLE-3: Scaling up Inference Acceleration via Training-Time Test Grid</span><span class="rv">Li et al. · 2025</span><a href="https://arxiv.org/abs/2503.01840">arXiv:2503.01840</a></li>
+    <li><span class="rt">Break the Sequential Dependency of LLM Inference Using Lookahead Decoding</span><span class="rv">Fu et al. · ICML 2024</span><a href="https://arxiv.org/abs/2402.02057">arXiv:2402.02057</a></li>
+    <li><span class="rt">DeepSeek-V2: A Strong, Economical, and Efficient MoE Language Model (MLA)</span><span class="rv">DeepSeek-AI · 2024</span><a href="https://arxiv.org/abs/2405.04434">arXiv:2405.04434</a></li>
+    <li><span class="rt">DeepSeek-V3 Technical Report (MTP / MLA / FP8)</span><span class="rv">DeepSeek-AI · 2024</span><a href="https://arxiv.org/abs/2412.19437">arXiv:2412.19437</a></li>
+    <li><span class="rt">Draft &amp; Verify: Lossless LLM Acceleration via Self-Speculative Decoding</span><span class="rv">Zhang et al. · 2023</span><a href="https://arxiv.org/abs/2309.08168">arXiv:2309.08168</a></li>
+    <li><span class="rt">REST: Retrieval-Based Speculative Decoding</span><span class="rv">Ankner et al. · 2023 · 用检索 n-gram 数据起草</span><a href="https://arxiv.org/abs/2311.08252">arXiv:2311.08252</a></li>
+    <li><span class="rt">H2O: Heavy-Hitter Oracle for Efficient Generative Inference of LLMs</span><span class="rv">Zhang et al. · NeurIPS 2023</span><a href="https://arxiv.org/abs/2306.14048">arXiv:2306.14048</a></li>
+    <li><span class="rt">SnapKV: LLM Knows What You Are Looking for Before Generation</span><span class="rv">Li et al. · NeurIPS 2024</span><a href="https://arxiv.org/abs/2404.14469">arXiv:2404.14469</a></li>
+    <li><span class="rt">KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache</span><span class="rv">Zhang et al. · ICML 2024</span><a href="https://arxiv.org/abs/2402.02750">arXiv:2402.02750</a></li>
+    <li><span class="rt">GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers</span><span class="rv">Frantar et al. · ICLR 2023</span><a href="https://arxiv.org/abs/2210.17323">arXiv:2210.17323</a></li>
+    <li><span class="rt">SmoothQuant: Accurate and Efficient Post-Training Quantization for LLMs</span><span class="rv">Xiao et al. · ICML 2023</span><a href="https://arxiv.org/abs/2211.10438">arXiv:2211.10438</a></li>
+    <li><span class="rt">AWQ: Activation-aware Weight Quantization for On-Device LLM Compression</span><span class="rv">Lin et al. · MLSys 2024</span><a href="https://arxiv.org/abs/2306.00978">arXiv:2306.00978</a></li>
+    <li><span class="rt">Grammar-Constrained Decoding for Structured NLP Tasks without Finetuning</span><span class="rv">Geng et al. · EMNLP 2023</span><a href="https://arxiv.org/abs/2305.13971">arXiv:2305.13971</a></li>
+    <li><span class="rt">Efficient Guided Generation for Large Language Models (Outlines)</span><span class="rv">Willard &amp; Louf · 2023</span><a href="https://arxiv.org/abs/2307.09702">arXiv:2307.09702</a></li>
+    <li><span class="rt">XGrammar: Flexible and Efficient Structured Generation Engine for LLMs</span><span class="rv">Dong et al. · 2024</span><a href="https://arxiv.org/abs/2411.15100">arXiv:2411.15100</a></li>
+    <li><span class="rt">Roofline: An Insightful Visual Performance Model for Multicore Architectures</span><span class="rv">Williams, Waterman, Patterson · CACM 2009</span><a href="https://dl.acm.org/doi/10.1145/1498765.1498785">ACM DOI</a></li>
+  </ol>
+</section>
+
+<footer class="end wrap">
+  <p><strong>大模型推理与加速技术全景</strong> · AI Infra 方向学习分享</p>
+  <p>本文基于个人学习笔记整理，并参考上述公开论文与开源框架文档；示意图为原创绘制，数据为论文/实测量级，具体指标请以业务实测为准。</p>
+  <p style="margin-top:10px">分享人：__________　日期：__________</p>
+</footer>
+
+<button id="toTop" aria-label="回到顶部">↑</button>
+<!-- BODY-ANCHOR -->
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+  renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}],throwOnError:false});
+  var bar=document.getElementById("bar"),toTop=document.getElementById("toTop");
+  function onScroll(){var h=document.documentElement;var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;bar.style.width=p+"%";
+    if(h.scrollTop>500)toTop.classList.add("show");else toTop.classList.remove("show");}
+  document.addEventListener("scroll",onScroll);onScroll();
+  toTop.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"})});
+});
+</script>
+</body>
+</html>
