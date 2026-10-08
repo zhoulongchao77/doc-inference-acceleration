@@ -4,7 +4,7 @@
 
 | 文件 | 章节 | 小节 |
 | --- | --- | --- |
-| [00-开篇.md](00-开篇.md) | 00 开篇：全景地图与推理加速为什么值得做 | 全景地图：一次请求的完整流水线与 AI 基建八层；为什么推理加速值得做：两大根本矛盾 |
+| [00-开篇.md](00-开篇.md) | 00 开篇：全景地图与推理加速为什么值得做 | 全景地图：一次请求的完整流水线与 AI 基建推理层八层；为什么推理加速值得做：两大根本矛盾 |
 | [01-输入与 Tokenizer.md](01-输入与 Tokenizer.md) | 01 输入与 Tokenizer：文字和图片变成 ID | Tokenizer：文本怎样切成序号；图片怎样进来：视觉编码器与图像 token |
 | [02-Embedding.md](02-Embedding.md) | 02 Embedding：ID 转向量，位置编码就位 | Embedding：一次近乎免费的查表；位置编码：给向量装上“坐标” |
 | [03-Transformer 主干计算.md](03-Transformer 主干计算.md) | 03 Transformer 主干计算：KV Cache、FlashAttention、量化 | 背景：推理只有前向，Decode 为什么慢；KV Cache 家族：少算、分页、压缩与逐出；FlashAttention：用分块把 N×N 矩阵“焊”在片上；量化：直接减少要搬运的字节 |
