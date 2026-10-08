@@ -50,6 +50,8 @@ h1 em{font-style:normal;color:var(--accent);position:relative}
 .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
 .meta-row span{background:#fff;border:1px solid var(--line);padding:4px 11px;border-radius:20px}
 .meta-row b{color:var(--ink);font-weight:600}
+.meta-row .author{background:var(--accent);border-color:var(--accent);color:#fff}
+.meta-row .author b{color:#fff}
 .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}
 .hstat{background:var(--navy);color:#fff;border-radius:12px;padding:16px 16px 14px;position:relative;overflow:hidden}
 .hstat:nth-child(2){background:var(--teal)} .hstat:nth-child(3){background:var(--accent)} .hstat:nth-child(4){background:var(--gold)}
@@ -230,6 +232,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <h1>大模型推理与加速：<br/>沿着<em>一次请求</em>从<em>输入</em>走到<em>输出</em></h1>
 <p class="lead">把一次请求拆开来看：文字或图片先经 Tokenizer 变成序号，Embedding 查成向量，再流过几十个 Transformer 层完成推理计算，采样环节按输出的浮点数挑出下一个序号，最后由 Detokenizer 拼回文本——回答就是这样一个 token 接一个 token 产生的。AI 基建横跨硬件、算子、显存、调度与架构多个层次，本文把镜头对准<strong>推理层</strong>，沿着这条从输入到输出的路径，逐站看每个环节慢在哪、可以怎么优化，以及每项技术背后的原始论文。</p>
 <div class="meta-row">
+<span class="author">作者 <b>周龙超 · 超周到的程序员</b></span>
 <span>分享主题 <b>LLM 推理与部署加速</b></span>
 <span>参考文献 <b>43 篇（含 arXiv）</b></span>
 </div>
