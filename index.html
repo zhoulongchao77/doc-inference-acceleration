@@ -50,8 +50,17 @@ h1 em{font-style:normal;color:var(--accent);position:relative}
 .meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
 .meta-row span{background:#fff;border:1px solid var(--line);padding:4px 11px;border-radius:20px}
 .meta-row b{color:var(--ink);font-weight:600}
-.meta-row .author{background:var(--accent);border-color:var(--accent);color:#fff}
-.meta-row .author b{color:#fff}
+.hero-top{display:flex;gap:28px;align-items:flex-start}
+.hero-main{flex:1;min-width:0}
+.author-card{flex:none;width:224px;background:var(--navy);color:#fff;border-radius:14px;padding:20px 18px;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:34px}
+.author-card .avatar{width:60px;height:60px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;
+  font-size:26px;font-weight:900;color:#fff}
+.author-card .a-name{font-size:18px;font-weight:900;margin-top:10px;letter-spacing:.02em}
+.author-card .a-tag{font-size:12px;color:#ffd9bd;margin-top:3px;font-weight:500}
+.author-card .a-role{margin-top:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:#9fb4cd;
+  border-top:1px solid rgba(255,255,255,.18);padding-top:10px;width:100%}
+@media(max-width:820px){.hero-top{flex-direction:column}.author-card{width:100%;margin-top:0}}
 .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}
 .hstat{background:var(--navy);color:#fff;border-radius:12px;padding:16px 16px 14px;position:relative;overflow:hidden}
 .hstat:nth-child(2){background:var(--teal)} .hstat:nth-child(3){background:var(--accent)} .hstat:nth-child(4){background:var(--gold)}
@@ -228,11 +237,20 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </div></nav>
 <section class="wrap" id="ch0" style="padding:20px 0 8px">
 <header class="hero" style="padding:24px 0 26px">
+<div class="hero-top">
+<div class="hero-main">
 <div class="kicker">AI Infra · Inference &amp; Acceleration</div>
 <h1>大模型推理与加速：<br/>沿着<em>一次请求</em>从<em>输入</em>走到<em>输出</em></h1>
 <p class="lead">把一次请求拆开来看：文字或图片先经 Tokenizer 变成序号，Embedding 查成向量，再流过几十个 Transformer 层完成推理计算，采样环节按输出的浮点数挑出下一个序号，最后由 Detokenizer 拼回文本——回答就是这样一个 token 接一个 token 产生的。AI 基建横跨硬件、算子、显存、调度与架构多个层次，本文把镜头对准<strong>推理层</strong>，沿着这条从输入到输出的路径，逐站看每个环节慢在哪、可以怎么优化，以及每项技术背后的原始论文。</p>
+</div>
+<div class="author-card">
+<div class="avatar">周</div>
+<div class="a-name">周龙超</div>
+<div class="a-tag">超周到的程序员</div>
+<div class="a-role">AUTHOR · 作者</div>
+</div>
+</div>
 <div class="meta-row">
-<span class="author">作者 <b>周龙超 · 超周到的程序员</b></span>
 <span>分享主题 <b>LLM 推理与部署加速</b></span>
 <span>参考文献 <b>43 篇（含 arXiv）</b></span>
 </div>
