@@ -220,8 +220,8 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <div class="brand">推理加速<span>·</span> AI Infra 分享</div>
 <div class="navlinks">
 <a href="#ch0">背景</a><a href="#ch1">输入</a><a href="#ch2">Embedding</a>
-<a href="#ch3">推理加速</a><a href="#ch4">采样</a><a href="#ch5">输出</a>
-<a href="#ch6">并发请求</a><a href="#ch7">总结</a>
+<a href="#ch3">推理加速</a><a href="#ch4">并发调度</a><a href="#ch5">采样</a>
+<a href="#ch6">输出</a><a href="#ch7">总结</a>
 </div>
 </div></nav>
 <section class="wrap" id="ch0" style="padding:20px 0 8px">
@@ -316,11 +316,15 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </g>
 <!-- autoregressive loop -->
 <path d="M674,320 L674,336 L522,336 L522,260" fill="none" marker-end="url(#hpo)" stroke="#e8590c" stroke-dasharray="6 4" stroke-width="1.8"></path>
-<text fill="#e8590c" font-size="11" font-weight="700" x="684" y="330">选中的 ID 作为下一步输入，循环往复</text>
+<text fill="#e8590c" font-size="11" font-weight="700" text-anchor="middle" x="668" y="330">选中的 ID 作为下一步输入，循环往复</text>
 <!-- ===== 并发请求 cross-cutting bar (light) ===== -->
+<g stroke="#9aa7ba" stroke-width="2">
+<line x1="160" x2="160" y1="318" y2="344"></line><line x1="380" x2="380" y1="318" y2="344"></line>
+<line x1="760" x2="760" y1="318" y2="344"></line><line x1="900" x2="900" y1="318" y2="344"></line>
+</g>
 <rect fill="#f4f7fb" height="64" rx="12" stroke="#33415c" stroke-width="1.6" width="900" x="40" y="344"></rect>
-<rect fill="#33415c" height="22" rx="11" width="270" x="56" y="333"></rect>
-<text fill="#ffffff" font-size="11.5" font-weight="700" text-anchor="middle" x="191" y="348">并发请求 · 横切所有环节</text>
+<rect fill="#e7ecf3" height="22" rx="11" width="270" x="56" y="333"></rect>
+<text fill="#33415c" font-size="11.5" font-weight="700" text-anchor="middle" x="191" y="348">并发请求 · 横切所有环节</text>
 <g text-anchor="middle">
 <rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="150" x="115" y="364"></rect>
 <text fill="#3c4d66" font-size="11" x="190" y="380">Continuous Batching</text>
@@ -393,9 +397,9 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <a href="#ch1"><span class="n">01</span> 输入与 Tokenizer：文字和图片变成 ID</a>
 <a href="#ch2"><span class="n">02</span> Embedding：ID 转向量，位置编码就位</a>
 <a href="#ch3"><span class="n">03</span> Transformer 主干计算：KV Cache、FlashAttention、量化</a>
-<a href="#ch4"><span class="n">04</span> 采样：从 logits 到下一个 ID</a>
-<a href="#ch5"><span class="n">05</span> Detokenizer：ID 拼回文本，流式输出</a>
-<a href="#ch6"><span class="n">06</span> 并发请求：批处理、前缀复用与 PD 分离</a>
+<a href="#ch4"><span class="n">04</span> 并发横切面：批处理、前缀复用与 PD 分离</a>
+<a href="#ch5"><span class="n">05</span> 采样：从 logits 到下一个 ID</a>
+<a href="#ch6"><span class="n">06</span> Detokenizer：ID 拼回文本，流式输出</a>
 <a href="#ch7"><span class="n">07</span> 总结、落地清单与前沿趋势</a>
 </div>
 </header>
@@ -573,7 +577,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <figcaption><b>图 5</b><span>图片接入路径：像素 → patch 网格 → ViT + 投影 → 图像 embedding，与文本 token 拼接。之后的 KV Cache、批处理、采样等优化对图像 token 同样生效。</span></figcaption>
 </figure>
 <div class="callout c-blue"><span class="ct">这一环节怎么优化</span>
-<p>① 分词在 CPU 异步执行、与 GPU 前向重叠，别让字符串处理阻塞推理；② 公共前缀（system prompt、多轮历史）在分词阶段即可识别，为 RadixAttention 的前缀复用铺路（第 6 章）；③ 为结构化输出 / 工具调用预留的特殊 token 应加进词表，避免在采样阶段被拆碎（第 4 章）。</p>
+<p>① 分词在 CPU 异步执行、与 GPU 前向重叠，别让字符串处理阻塞推理；② 公共前缀（system prompt、多轮历史）在分词阶段即可识别，为 RadixAttention 的前缀复用铺路（第 4 章）；③ 为结构化输出 / 工具调用预留的特殊 token 应加进词表，避免在采样阶段被拆碎（第 5 章）。</p>
 <p>还有一个常踩的坑在分词之前：<strong>对话模板（Chat Template）</strong>。多轮对话并不是直接拼接文本，而是按模型约定的模板（如 <code>&lt;|im_start|&gt;user … &lt;|im_end|&gt;</code>）拼成一条带角色标记的字符串再分词——模板用错（换模型没换模板、系统提示位置拼错），模型不会报错、只会<strong>静默变笨</strong>；模板不一致还会让前缀缓存完全失效。上线前拿官方模板逐字节比对，是零成本的质量保险。</p></div>
 </section>
 <!-- ================= 第 2 章 · Embedding ================= -->
@@ -643,11 +647,11 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <h3>位置编码：给向量装上“坐标”</h3>
 <p>自注意力只看内容相关性、<strong>对 token 的先后顺序天然无感</strong>（打乱输入，注意力照样能算）。因此必须显式注入位置信息：主流做法是 <strong>RoPE（旋转位置编码）</strong>，在每个注意力层对 Q、K 按位置做一次与相对距离相关的“旋转”，让注意力打分天然带有相对位置信息，且能外推到训练时没见过的长度。RoPE 之外还有 ALiBi 等替代方案（不给向量做旋转，而是给注意力打分直接加上与距离线性相关的偏置，外推性好但表达力略弱），不过当前主流模型几乎清一色采用 RoPE。</p>
 <p><strong>长上下文外推：PI、NTK 与 YaRN。</strong>RoPE 的“外推”其实有限——拿按 4K 训练的模型直接跑 128K，注意力打分会迅速退化。工程上靠三类位置编码改造把窗口拉长：<strong>位置插值（PI）</strong>把超长位置线性压缩回训练范围，配合少量微调即可；<strong>NTK-aware 插值</strong>改为非均匀缩放旋转频率、压低频保高频，短文本几乎无损；<strong>YaRN</strong> 在此基础上按维度分频段处理并引入注意力温度校正，成为长上下文模型（Qwen、GLM 等）的主流配置。它们的共同点：<strong>不改模型结构、只动 RoPE 的“坐标系”</strong>，是部署长上下文时成本最低的改造。</p>
-<p><strong>RoPE 与 KV Cache 的耦合。</strong>旋转是施加在 Q、K 上的，因此<strong>缓存进 KV Cache 的 K 已经带上了位置信息</strong>——这带来两个直接后果：① 前缀复用（6.2 RadixAttention）要求命中的前缀位置编号完全一致，否则缓存的 K 与新请求的坐标系对不上；② DeepSeek MLA（3.2）之所以要在潜向量之外<strong>单独缓存一份 RoPE 部分</strong>，正是因为位置分量无法和内容一起被低秩压缩。同理，用 PI / YaRN 改坐标系扩上下文时，存量 KV 也必须一并重算。</p>
-<div class="callout c-blue"><span class="ct">这一环节怎么优化</span><p>Embedding 本身没有提速空间，关键是<strong>别让它阻塞串行路径</strong>：查表可与前一步的采样 / 分词在流水线上重叠，RoPE 可融合进 QKV 投影算子。需要记住的是反方向的事实——采样前的 <strong>lm_head 输出投影是词表维度的大矩阵乘</strong>，在大 batch、大词表下开销可观，是第 4 章要面对的对象。</p></div>
+<p><strong>RoPE 与 KV Cache 的耦合。</strong>旋转是施加在 Q、K 上的，因此<strong>缓存进 KV Cache 的 K 已经带上了位置信息</strong>——这带来两个直接后果：① 前缀复用（4.2 RadixAttention）要求命中的前缀位置编号完全一致，否则缓存的 K 与新请求的坐标系对不上；② DeepSeek MLA（3.2）之所以要在潜向量之外<strong>单独缓存一份 RoPE 部分</strong>，正是因为位置分量无法和内容一起被低秩压缩。同理，用 PI / YaRN 改坐标系扩上下文时，存量 KV 也必须一并重算。</p>
+<div class="callout c-blue"><span class="ct">这一环节怎么优化</span><p>Embedding 本身没有提速空间，关键是<strong>别让它阻塞串行路径</strong>：查表可与前一步的采样 / 分词在流水线上重叠，RoPE 可融合进 QKV 投影算子。需要记住的是反方向的事实——采样前的 <strong>lm_head 输出投影是词表维度的大矩阵乘</strong>，在大 batch、大词表下开销可观，是第 5 章要面对的对象。</p></div>
 </section>
 <!-- ================= 第 3 章 · 推理加速 ================= -->
-<section class="wrap" id="ch3"><div class="sec-head"><span class="sec-no">03</span><h2>Transformer 主干计算：KV Cache、FlashAttention、量化</h2><span class="sub">TRANSFORMER · KERNEL</span></div><p>向量序列进入模型主体——$L$ 个结构相同的 Transformer Block，这是整条路径上算力、显存带宽与优化手段最密集的一环。本章先用 3.1 建立背景、诊断 Decode 为什么慢；再沿三条优化主线展开：3.2 KV Cache 家族（少算、放得下、装得少，能复用见 6.2）、3.3 FlashAttention、3.4 量化。</p><figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><circle cx="436" cy="40" fill="#16233a" r="3.5"></circle><rect fill="#fff" height="48" rx="10" stroke="#16233a" stroke-width="1.7" width="116" x="378" y="44"></rect><text fill="#16233a" font-size="11.8" font-weight="800" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#7a8699" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="508" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">当前环节 · Transformer 主干计算 ×L</text></g></svg></figure><figure class="fig fig-wide">
+<section class="wrap" id="ch3"><div class="sec-head"><span class="sec-no">03</span><h2>Transformer 主干计算：KV Cache、FlashAttention、量化</h2><span class="sub">TRANSFORMER · KERNEL</span></div><p>向量序列进入模型主体——$L$ 个结构相同的 Transformer Block，这是整条路径上算力、显存带宽与优化手段最密集的一环。本章先用 3.1 建立背景、诊断 Decode 为什么慢；再沿三条优化主线展开：3.2 KV Cache 家族（少算、放得下、装得少，能复用见 4.2）、3.3 FlashAttention、3.4 量化。</p><figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><circle cx="436" cy="40" fill="#16233a" r="3.5"></circle><rect fill="#fff" height="48" rx="10" stroke="#16233a" stroke-width="1.7" width="116" x="378" y="44"></rect><text fill="#16233a" font-size="11.8" font-weight="800" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#7a8699" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="508" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">当前环节 · Transformer 主干计算 ×L</text></g></svg></figure><figure class="fig fig-wide">
 <svg aria-label="03 Transformer 主干计算结构地图" role="img" viewbox="0 0 960 606">
 <defs><clippath id="nclip3"><rect height="586" rx="14" width="940" x="10" y="10"></rect></clippath></defs>
 <g font-family="inherit">
@@ -708,12 +712,12 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#697a92" font-size="11" x="622" y="462">搬运字节减半 ~ 1/4（有损，需校准）</text>
 <rect fill="#e9edf3" height="44" rx="9" width="908" x="26" y="498"></rect>
 <text fill="#16233a" font-size="11.5" font-weight="700" x="42" y="518">主线分工：3.2 让历史 K/V 不重算、好摆放、体积小；3.3 让注意力中间矩阵不落地；3.4 让每个字节更便宜——彼此正交、可叠加。</text>
-<text fill="#697a92" font-size="11.5" x="42" y="536">另一条思路是减少前向「次数」（一次前向出多个 token）：投机解码家族，见第 04 章。</text>
+<text fill="#697a92" font-size="11.5" x="42" y="536">另一条思路是减少前向「次数」（一次前向出多个 token）：投机解码家族，见第 05 章。</text>
 </g>
 </svg>
 <figcaption><b>图 7</b><span><b>03 章结构地图</b>：3.1 背景与瓶颈诊断（两节拍 + 显存账 + Roofline）；3.2 KV Cache 家族三层手段（少算 / 放得下 / 装得少；跨请求前缀复用属于并发请求一章，不在本图）；3.3 FlashAttention；3.4 量化。</span></figcaption>
 </figure><h3>背景：推理只有前向，Decode 为什么慢</h3><h4>推理只有前向：权重固定，不断预测下一个 token</h4><p><strong>前向传播（Forward）</strong>是数据从 Embedding 一路算到 logits 的过程，训练和推理都有；<strong>反向传播（Backward）</strong>从损失 Loss 倒推梯度、更新权重，只在训练中存在。<strong>推理阶段权重固定、只有前向、不断预测下一个 token</strong>，不更新任何参数——这也是为什么推理优化的抓手集中在“怎么搬数据、怎么调度”，而不需要保存反向用的中间状态。</p><h4>30 秒回顾 Transformer 与 QKV</h4><p>向量序列流过 $L$ 个结构相同的 <strong>Transformer Block</strong>（多头自注意力 MHA + 前馈网络 MLP/FFN，配 LayerNorm 与残差），最后由输出 Linear 层投影成词表维度的 logits。注意力做的事，是让当前 token 的 Query 与所有历史 token 的 Key 打分、再按权重取 Value：</p><div class="formula-box">$$\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V$$</div><p>其中 $Q$ 是当前 token 在“问什么”，$K$ 是每个历史 token 的“标签”，$V$ 是每个历史 token 的“内容”。多头（Multi-Head）只是把 Q/K/V 切成多组并行计算后拼回。</p>
-<p>容易被忽略的是<strong>另一半参数：MLP/FFN</strong>。每个 Block 里注意力只占约 1/3 参数，剩下约 2/3 在两层（或 SwiGLU 三层）的前馈网络里——Decode 每步“搬权重”，大头其实是搬 MLP。现代模型的主流做法是把 MLP 换成 <strong>MoE（Mixture of Experts，混合专家）</strong>：把一个大 FFN 拆成数十到数百个“专家”，每个 token 由路由器只激活其中少数几个（如 Qwen3-30B-A3B 总参 30.5B、每 token 仅激活 3.3B）。MoE 对推理的含义是<strong>显存按总参数装、带宽与算力按激活参数算</strong>：模型必须完整常驻显存，但每个 token 只需读取被激活专家的权重——Decode 访存大减、TPS 天花板抬高（6.1 会按此修正口径），代价是专家路由引入 All-to-All 通信与负载均衡问题（见 7.3 趋势）。</p>
+<p>容易被忽略的是<strong>另一半参数：MLP/FFN</strong>。每个 Block 里注意力只占约 1/3 参数，剩下约 2/3 在两层（或 SwiGLU 三层）的前馈网络里——Decode 每步“搬权重”，大头其实是搬 MLP。现代模型的主流做法是把 MLP 换成 <strong>MoE（Mixture of Experts，混合专家）</strong>：把一个大 FFN 拆成数十到数百个“专家”，每个 token 由路由器只激活其中少数几个（如 Qwen3-30B-A3B 总参 30.5B、每 token 仅激活 3.3B）。MoE 对推理的含义是<strong>显存按总参数装、带宽与算力按激活参数算</strong>：模型必须完整常驻显存，但每个 token 只需读取被激活专家的权重——Decode 访存大减、TPS 天花板抬高（4.1 会按此修正口径），代价是专家路由引入 All-to-All 通信与负载均衡问题（见 7.3 趋势）。</p>
 <figure class="fig">
 <svg aria-label="MoE 混合专家路由示意" role="img" viewbox="0 0 900 310">
 <g font-family="inherit">
@@ -872,7 +876,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </g>
 </svg>
 <figcaption><b>图 11</b><span>Roofline 模型（Williams et al., 2009）：斜屋顶由显存带宽决定（性能 = β·I），平屋顶由峰值算力决定，二者交点为“脊点”。H100 脊点 ≈ 989/3.35 ≈ 295 FLOPs/B。Decode 落在斜坡（带宽受限，约 5 TF/s 量级），Prefill 贴近平顶（算力受限）。</span></figcaption>
-</figure><small class="note">A10 口径：FP16 Tensor Core 稠密峰值约 125 TFLOPS、GDDR6 带宽 600 GB/s，脊点 ≈ 125 / 0.6 ≈ 208 FLOPs/B——Decode 同样落在斜坡，结论不变；A10 无 FP8 硬件，FP8 屋顶不适用。</small><div class="callout c-blue"><span class="ct">用 Roofline 指导优化</span><p>Decode 想提速，要么<strong>减少搬运字节</strong>（量化、压缩/驱逐 KV、减 KV 头）；要么<strong>提高算术强度</strong>（多请求拼 batch，让一次搬运服务更多 token，第 6 章）；Prefill 想提速则靠 FlashAttention、张量并行与低精度。</p></div><h3>KV Cache 家族：少算、分页、压缩与逐出</h3><p>如果只记住一个推理优化，那就是 KV Cache。本节把所有围绕 KV Cache 的手段收为一个家族，按四个问题展开：<strong>① 少算</strong>——历史 K/V 只算一次；<strong>② 放得下</strong>——PagedAttention 分页管理；<strong>③ 装得少</strong>——GQA/MQA、MLA 与运行时逐出（KIVI 位宽量化见 3.4）；<strong>④ 能复用</strong>——RadixAttention 前缀树（见 6.2）。</p><h4 class="l3">① 少算：把历史 K/V 存起来，注意力计算 O(n²) → O(n)</h4><p>它的思想极其朴素：<strong>把已经算过的历史 token 的 K、V 存起来，新 token 只算自己的 Q，直接复用旧 K/V</strong>，从而把每步“重算全部历史”的开销砍掉。</p><figure class="fig">
+</figure><small class="note">A10 口径：FP16 Tensor Core 稠密峰值约 125 TFLOPS、GDDR6 带宽 600 GB/s，脊点 ≈ 125 / 0.6 ≈ 208 FLOPs/B——Decode 同样落在斜坡，结论不变；A10 无 FP8 硬件，FP8 屋顶不适用。</small><div class="callout c-blue"><span class="ct">用 Roofline 指导优化</span><p>Decode 想提速，要么<strong>减少搬运字节</strong>（量化、压缩/驱逐 KV、减 KV 头）；要么<strong>提高算术强度</strong>（多请求拼 batch，让一次搬运服务更多 token，第 4 章）；Prefill 想提速则靠 FlashAttention、张量并行与低精度。</p></div><h3>KV Cache 家族：少算、分页、压缩与逐出</h3><p>如果只记住一个推理优化，那就是 KV Cache。本节把所有围绕 KV Cache 的手段收为一个家族，按四个问题展开：<strong>① 少算</strong>——历史 K/V 只算一次；<strong>② 放得下</strong>——PagedAttention 分页管理；<strong>③ 装得少</strong>——GQA/MQA、MLA 与运行时逐出（KIVI 位宽量化见 3.4）；<strong>④ 能复用</strong>——RadixAttention 前缀树（见 4.2）。</p><h4 class="l3">① 少算：把历史 K/V 存起来，注意力计算 O(n²) → O(n)</h4><p>它的思想极其朴素：<strong>把已经算过的历史 token 的 K、V 存起来，新 token 只算自己的 Q，直接复用旧 K/V</strong>，从而把每步“重算全部历史”的开销砍掉。</p><figure class="fig">
 <svg aria-label="有无 KV Cache 的计算量对比" role="img" viewbox="0 0 900 290">
 <g font-family="inherit">
 <!-- divider -->
@@ -1183,7 +1187,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </tbody>
 </table>
 </div><p><strong>Attention Sink：为什么开头几个 token 永远丢不得。</strong>驱逐类方法有一个共同的实证基础：softmax 要求注意力权重归一，模型会把大量“无处安放”的注意力<strong>倾倒给序列最开始的几个 token</strong>（Attention Sink）——它们被关注的强度远超其语义重要性，一旦被驱逐，输出立刻崩坏。StreamingLLM 利用这一点给出极简方案：<strong>只保留最前 4 个 sink token + 最近滑动窗口</strong>，KV 有界、无需微调，即可在远超训练长度的流式输入上稳定生成。它既是所有驱逐策略“特殊照顾开头”的物理直觉，也是无限流式对话（直播字幕、持续监控等场景）的经典解法。</p>
-<div class="paper"><span class="pid">StrLLM</span><div><div class="ptitle">Efficient Streaming Language Models with Attention Sinks</div><div class="pinfo">Xiao et al. · MIT · ICLR 2024 · Attention Sink 现象 + 滑动窗口，KV 有界的无限流式生成</div></div><a href="https://arxiv.org/abs/2309.17453">arXiv:2309.17453</a></div><div class="callout c-teal"><span class="ct">KV Cache 家族一览</span><p>少算（缓存复用）→ 放得下（PagedAttention）→ 装得少（GQA/MQA、MLA、H2O/SnapKV；位宽量化 KIVI 见 3.4）→ 能复用（RadixAttention 见 6.2）。现代引擎里这几件事通常同时开启，且与 3.3/3.4 正交可叠加。</p></div><h3>FlashAttention：用分块把 N×N 矩阵“焊”在片上</h3><p>先把标准注意力的完整计算写全（与 3.1 的公式一致）：</p><div class="formula-box">$$\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V$$</div><p>拆成三步看：$S=\dfrac{QK^{\top}}{\sqrt{d_k}}$（打分，<strong>别忘了除以 $\sqrt{d_k}$ 做缩放</strong>，防止分数随维度变大把 softmax 推进饱和区）、$P=\mathrm{softmax}(S)$（归一化成注意力权重）、$O=PV$（按权重加权求和 Value）。标准实现要把 $S$、$P$ 这些 <strong>$N\times N$ 中间矩阵反复写回 HBM 再读出</strong>，访存量是 $O(N^2)$。FlashAttention 的做法是<strong>算子融合 + 分块（Tiling）+ 在线 Softmax（Online Softmax）</strong>：把 Q/K/V 分块搬进片上 SRAM，在片上连续完成 $QK^\top$、softmax、乘 V，用流式方式逐块更新 softmax 归一化因子，最终输出 $O$ 只写回 HBM 一次，HBM 访存降到 $O(N)$。</p><figure class="fig">
+<div class="paper"><span class="pid">StrLLM</span><div><div class="ptitle">Efficient Streaming Language Models with Attention Sinks</div><div class="pinfo">Xiao et al. · MIT · ICLR 2024 · Attention Sink 现象 + 滑动窗口，KV 有界的无限流式生成</div></div><a href="https://arxiv.org/abs/2309.17453">arXiv:2309.17453</a></div><div class="callout c-teal"><span class="ct">KV Cache 家族一览</span><p>少算（缓存复用）→ 放得下（PagedAttention）→ 装得少（GQA/MQA、MLA、H2O/SnapKV；位宽量化 KIVI 见 3.4）→ 能复用（RadixAttention 见 4.2）。现代引擎里这几件事通常同时开启，且与 3.3/3.4 正交可叠加。</p></div><h3>FlashAttention：用分块把 N×N 矩阵“焊”在片上</h3><p>先把标准注意力的完整计算写全（与 3.1 的公式一致）：</p><div class="formula-box">$$\mathrm{Attention}(Q,K,V)=\mathrm{softmax}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V$$</div><p>拆成三步看：$S=\dfrac{QK^{\top}}{\sqrt{d_k}}$（打分，<strong>别忘了除以 $\sqrt{d_k}$ 做缩放</strong>，防止分数随维度变大把 softmax 推进饱和区）、$P=\mathrm{softmax}(S)$（归一化成注意力权重）、$O=PV$（按权重加权求和 Value）。标准实现要把 $S$、$P$ 这些 <strong>$N\times N$ 中间矩阵反复写回 HBM 再读出</strong>，访存量是 $O(N^2)$。FlashAttention 的做法是<strong>算子融合 + 分块（Tiling）+ 在线 Softmax（Online Softmax）</strong>：把 Q/K/V 分块搬进片上 SRAM，在片上连续完成 $QK^\top$、softmax、乘 V，用流式方式逐块更新 softmax 归一化因子，最终输出 $O$ 只写回 HBM 一次，HBM 访存降到 $O(N)$。</p><figure class="fig">
 <svg aria-label="FlashAttention 分块与在线 softmax" role="img" viewbox="0 0 900 340">
 <defs><marker id="ar3" markerheight="10" markerwidth="10" orient="auto" refx="8" refy="5"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"></path></marker></defs>
 <g font-family="inherit">
@@ -1218,7 +1222,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <div class="paper"><span class="pid">FA1</span><div><div class="ptitle">FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</div><div class="pinfo">Dao et al. · NeurIPS 2022 · IO 感知、分块 + 在线 softmax</div></div><a href="https://arxiv.org/abs/2205.14135">arXiv:2205.14135</a></div>
 <div class="paper"><span class="pid">FA2</span><div><div class="ptitle">FlashAttention-2: Better Parallelism and Work Partitioning</div><div class="pinfo">Tri Dao · 2023 · 约 2× FA1，减少非 matmul 开销</div></div><a href="https://arxiv.org/abs/2307.08691">arXiv:2307.08691</a></div>
 </div><div class="paper"><span class="pid">FA3</span><div><div class="ptitle">FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision</div><div class="pinfo">Shah, Bikshandi, Zhang, Thakkar, Ramani, Dao · NeurIPS 2024 · Hopper TMA 异步、Warp 特化、FP8</div></div><a href="https://arxiv.org/abs/2407.08608">arXiv:2407.08608</a></div><h4>同层的另一件武器：CUDA Graph 消除启动开销</h4>
-<p>FlashAttention 优化的是单个算子<strong>内部</strong>的访存；Decode 还有一层更“机械”的开销——每步前向要发起成百上千次 kernel launch，每次 launch 本身有数微秒的 CPU→GPU 开销，而 Decode 的每个 kernel 只算几十微秒，<strong>小 batch 下 launch 开销能占单步耗时的两三成</strong>（这正是 6.1 实测低于理论天花板的原因之一）。<strong>CUDA Graph 把 Decode 的整条计算图一次性“录制”下来，之后每步整体回放</strong>：CPU 只发一次启动指令，launch 开销几乎归零，vLLM、SGLang、TensorRT-LLM 均已默认对 Decode 开启。它与 FlashAttention、量化正交，是“不改算法、只改执行方式”的纯系统优化——代价是计算图形状（batch、序列长度档位）必须固定，引擎需要按档位预录多份。</p><h3>量化：直接减少要搬运的字节</h3><p>Decode 是 Memory-Bound，<strong>把权重/KV 从 BF16 降到 FP8/INT8/INT4，直接把搬运字节减半甚至减到 1/4</strong>，提速立竿见影；代价是引入微小精度损失（属<strong>有损</strong>优化，需校准或少量微调）。</p><div class="tbl-scroll">
+<p>FlashAttention 优化的是单个算子<strong>内部</strong>的访存；Decode 还有一层更“机械”的开销——每步前向要发起成百上千次 kernel launch，每次 launch 本身有数微秒的 CPU→GPU 开销，而 Decode 的每个 kernel 只算几十微秒，<strong>小 batch 下 launch 开销能占单步耗时的两三成</strong>（这正是 4.1 实测低于理论天花板的原因之一）。<strong>CUDA Graph 把 Decode 的整条计算图一次性“录制”下来，之后每步整体回放</strong>：CPU 只发一次启动指令，launch 开销几乎归零，vLLM、SGLang、TensorRT-LLM 均已默认对 Decode 开启。它与 FlashAttention、量化正交，是“不改算法、只改执行方式”的纯系统优化——代价是计算图形状（batch、序列长度档位）必须固定，引擎需要按档位预录多份。</p><h3>量化：直接减少要搬运的字节</h3><p>Decode 是 Memory-Bound，<strong>把权重/KV 从 BF16 降到 FP8/INT8/INT4，直接把搬运字节减半甚至减到 1/4</strong>，提速立竿见影；代价是引入微小精度损失（属<strong>有损</strong>优化，需校准或少量微调）。</p><div class="tbl-scroll">
 <table>
 <colgroup><col style="width:16%"/><col style="width:18%"/><col style="width:44%"/><col style="width:22%"/></colgroup>
 <thead><tr><th>技术</th><th>作用对象</th><th>方法要点</th><th>典型精度</th></tr></thead>
@@ -1234,8 +1238,382 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <div class="paper sys"><span class="pid">AWQ</span><div><div class="ptitle">AWQ: Activation-aware Weight Quantization for On-Device LLM Compression</div><div class="pinfo">Lin et al. · MLSys 2024</div></div><a href="https://arxiv.org/abs/2306.00978">arXiv:2306.00978</a></div>
 <div class="paper sys"><span class="pid">KIVI</span><div><div class="ptitle">KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache</div><div class="pinfo">Zhang et al. · ICML 2024</div></div><a href="https://arxiv.org/abs/2402.02750">arXiv:2402.02750</a></div>
 </div><small class="note">A10 等 Ampere 卡<strong>没有 FP8 硬件</strong>，优先选择 INT8（SmoothQuant，A10 INT8 Tensor Core 可直接加速）或 W4（AWQ / GPTQ）；FP8 仅在 Hopper / Blackwell 上可用。</small><div class="callout c-gold"><span class="ct">量化的两条边界</span><p>① <strong>W4A16 只省搬运、不省计算</strong>：权重以 4bit 存储、计算前反量化回 FP16，只有配套专用 kernel（Marlin、ExLlamaV2 等）才能把“省带宽”兑现为真实加速，且 batch 调大、负载转入 Compute-Bound 后收益递减；② <strong>只有激活也量化（W8A8 / FP8）才能吃到低精度 Tensor Core 的计算加速</strong>——A10 上的 SmoothQuant INT8 即属此类，而纯 W4 方案的价值主要在省显存与带宽。先用 Roofline（3.1）判瓶颈，再决定量化谁。</p></div></section>
-<!-- ================= 第 4 章 · 采样 ================= -->
-<section class="wrap" id="ch4"><div class="sec-head"><span class="sec-no">04</span><h2>采样：从 logits 到下一个 ID</h2><span class="sub">SAMPLING</span></div><p>Transformer 最后一层输出的隐藏向量，先经 lm_head 输出投影变成词表维度的一批浮点数（logits），采样环节要回答：这批浮点数对应哪个 token ID。本章先在 4.1 建立 logits→ID 的完整背景（采样旋钮），再讲两个优化方向：限制候选的约束解码（4.2），以及把「一次前向只出一个 ID」变成「一次前向出多个 ID」的投机解码家族（4.3）。</p><figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="378" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><circle cx="566" cy="40" fill="#16233a" r="3.5"></circle><rect fill="#fff" height="48" rx="10" stroke="#16233a" stroke-width="1.7" width="116" x="508" y="44"></rect><text fill="#16233a" font-size="11.8" font-weight="800" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#7a8699" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">当前环节 · Sampling（logits 选 ID）</text></g></svg></figure><h3>背景：logits 怎样变成一个 ID</h3><p>确定性方法（贪心）直接取 logit 最大的 ID；随机方法先做 softmax 得到概率分布再按分布采样，并用一组旋钮调节随机性与重复度。</p><p>先补一笔容易被低估的账：<strong>lm_head 本身是词表维度的大矩阵乘</strong>（隐藏维 × 词表，如 4096 × 15 万）。Decode 阶段每个 token、每个请求都要过一次，大词表模型在 batch 较大时 lm_head 可占单步耗时的 10–30%。工程上的应对包括：词表维度做张量并行、lm_head 与采样融合为一个 kernel。这也回答了 02 章留下的悬念——同一张矩阵，<strong>Embedding 查表几乎免费，lm_head 全量投影却不便宜</strong>。</p><figure class="fig">
+<!-- ================= 第 4 章 · 并发横切面 ================= -->
+<section class="wrap" id="ch4"><div class="sec-head"><span class="sec-no">04</span><h2>并发横切面：批处理、前缀复用与 PD 分离</h2><span class="sub">SERVING &amp; SCHEDULING</span></div><p>前面三章跟踪的是一个请求的旅程；服务端真正面对的是成千上万个请求同时处在流水线的不同环节：有的在 Prefill、有的在 Decode、有的刚结束。这一层横切所有环节，核心命题是调度粒度、显存组织与架构解耦，目标是把 GPU 吞吐打满。本章先看静态做法的痛点与天花板（4.1），再讲机内调度手段（4.2），最后是架构级的 PD 分离（4.3）。</p><figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="378" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="508" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><rect fill="none" height="60" rx="10" stroke="#16233a" stroke-dasharray="6 4" stroke-width="1.6" width="652" x="110" y="38"></rect><rect fill="#16233a" height="20" rx="10" width="240" x="330" y="24"></rect><text fill="#fff" font-size="11" font-weight="700" text-anchor="middle" x="450" y="38">并发横切面 · 覆盖流水线每一个环节</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">Continuous Batching · PagedAttention · Chunked Prefill · RadixAttention · PD 分离</text></g></svg></figure><figure class="fig fig-wide">
+<svg aria-label="04 并发横切面结构地图" role="img" viewbox="0 0 960 522">
+<defs><clippath id="nclip4"><rect height="502" rx="14" width="940" x="10" y="10"></rect></clippath>
+<marker id="m4a" markerheight="9" markerwidth="9" orient="auto" refx="7" refy="4.5"><path d="M0,0 L9,4.5 L0,9 Z" fill="#33415c"></path></marker></defs>
+<g font-family="inherit">
+<rect fill="#f7f9fc" height="502" rx="14" stroke="#33415c" stroke-width="2" width="940" x="10" y="10"></rect>
+<g clip-path="url(#nclip4)"><rect fill="#33415c" height="46" width="940" x="10" y="10"></rect></g>
+<text fill="#fff" font-size="15" font-weight="800" x="30" y="39">04 并发横切面 · 多请求同时处在流水线的不同环节</text>
+<!-- scheduler row -->
+<rect fill="#eef2f7" height="46" rx="10" stroke="#94a3b8" stroke-dasharray="5 4" width="180" x="26" y="66"></rect>
+<text fill="#16233a" font-size="12" font-weight="700" text-anchor="middle" x="116" y="94">多请求持续到达</text>
+<line marker-end="url(#m4a)" stroke="#33415c" stroke-width="2" x1="212" x2="276" y1="89" y2="89"></line>
+<rect fill="#16233a" height="46" rx="10" width="280" x="282" y="66"></rect>
+<text fill="#fff" font-size="12.5" font-weight="800" text-anchor="middle" x="422" y="94">全局调度器（每 iteration 重排）</text>
+<line marker-end="url(#m4a)" stroke="#33415c" stroke-width="2" x1="568" x2="632" y1="89" y2="89"></line>
+<rect fill="#eef4f3" height="46" rx="10" stroke="#7fc4bd" width="180" x="638" y="66"></rect>
+<text fill="#0f766e" font-size="12" font-weight="700" text-anchor="middle" x="728" y="94">GPU 资源池</text>
+<!-- 4.1 -->
+<rect fill="#eef2f7" height="104" rx="10" stroke="#94a3b8" width="908" x="26" y="130"></rect>
+<rect fill="#23456f" height="104" rx="10" width="150" x="26" y="130"></rect>
+<text fill="#fff" font-size="14" font-weight="800" text-anchor="middle" x="101" y="176">4.1 背景</text>
+<text fill="#cfe0f2" font-size="10.5" text-anchor="middle" x="101" y="200">痛点·天花板·指标</text>
+<g font-size="11">
+<rect fill="#fff" height="62" rx="8" stroke="#c9d3df" width="226" x="190" y="150"></rect>
+<text fill="#16233a" font-weight="700" x="204" y="172">Static Batching 三痛点</text>
+<text fill="#697a92" x="204" y="192">木桶效应 · 无法动态加入</text>
+<text fill="#697a92" x="204" y="210">按最大长度预留→碎片</text>
+<rect fill="#fff" height="62" rx="8" stroke="#c9d3df" width="226" x="430" y="150"></rect>
+<text fill="#16233a" font-weight="700" x="444" y="172">带宽反推 TPS 天花板</text>
+<text fill="#697a92" x="444" y="192">7B/A10 ≈ 43 TPS（理论）</text>
+<text fill="#697a92" x="444" y="210">实测 ~30，差距即优化空间</text>
+<rect fill="#fff" height="62" rx="8" stroke="#c9d3df" width="252" x="670" y="150"></rect>
+<text fill="#16233a" font-weight="700" x="684" y="172">服务指标体系</text>
+<text fill="#697a92" x="684" y="192">TTFT · ITL · TPS</text>
+<text fill="#697a92" x="684" y="210">Goodput（SLO 达标吞吐）</text>
+</g>
+<!-- 4.2 -->
+<rect fill="#eef4f3" height="118" rx="10" stroke="#7fc4bd" width="908" x="26" y="246"></rect>
+<rect fill="#0d9488" height="118" rx="10" width="150" x="26" y="246"></rect>
+<text fill="#fff" font-size="13.5" font-weight="800" text-anchor="middle" x="101" y="292">4.2 机内优化</text>
+<text fill="#d4ece9" font-size="10.5" text-anchor="middle" x="101" y="316">调度器统一驱动</text>
+<g text-anchor="middle">
+<rect fill="#fff" height="76" rx="9" stroke="#bfe0db" width="226" x="190" y="266"></rect>
+<text fill="#0f766e" font-size="12" font-weight="800" x="303" y="292">Continuous Batching</text>
+<text fill="#697a92" font-size="10.5" x="303" y="314">iteration 级进出</text>
+<text fill="#697a92" font-size="10.5" x="303" y="332">GPU 持续满载（ORCA）</text>
+<rect fill="#fff" height="76" rx="9" stroke="#bfe0db" width="226" x="430" y="266"></rect>
+<text fill="#0f766e" font-size="12" font-weight="800" x="543" y="292">Chunked Prefill</text>
+<text fill="#697a92" font-size="10.5" x="543" y="314">长 prompt 切块</text>
+<text fill="#697a92" font-size="10.5" x="543" y="332">与 Decode 交错护 ITL</text>
+<rect fill="#fff" height="76" rx="9" stroke="#bfe0db" width="252" x="670" y="266"></rect>
+<text fill="#0f766e" font-size="12" font-weight="800" x="796" y="292">RadixAttention</text>
+<text fill="#697a92" font-size="10.5" x="796" y="314">基数树 + 最长前缀匹配</text>
+<text fill="#697a92" font-size="10.5" x="796" y="332">公共前缀只算一次</text>
+</g>
+<!-- 4.3 -->
+<rect fill="#f6f0e6" height="96" rx="10" stroke="#d9b878" width="908" x="26" y="376"></rect>
+<rect fill="#b9832b" height="96" rx="10" width="150" x="26" y="376"></rect>
+<text fill="#fff" font-size="13.5" font-weight="800" text-anchor="middle" x="101" y="414">4.3 架构解耦</text>
+<text fill="#f6ead2" font-size="10.5" text-anchor="middle" x="101" y="438">PD 分离</text>
+<text fill="#16233a" font-size="11.5" font-weight="700" x="190" y="406">Prefill 池 → KV 高速迁移（NVLink / RDMA / NIXL）→ Decode 池</text>
+<text fill="#697a92" font-size="11" x="190" y="430">两池硬件、卡数、并行策略独立扩缩容；P/D 吞吐差约 140 倍，混部双输</text>
+<text fill="#697a92" font-size="11" x="190" y="454">DistServe · Mooncake · Splitwise · NVIDIA Dynamo</text>
+<rect fill="#e9edf3" height="30" rx="8" width="908" x="26" y="482"></rect>
+<text fill="#33415c" font-size="11" font-weight="700" x="42" y="502">脉络：机内手段把单 GPU 打满；P/D 矛盾无法调和时走向架构解耦——目标：Goodput 最大化、每 token 成本最小化</text>
+</g>
+</svg>
+<figcaption><b>图 19</b><span><b>04 章结构地图</b>：4.1 背景（Static Batching 痛点、TPS 天花板、指标体系）；4.2 机内优化（Continuous Batching / Chunked Prefill / RadixAttention）；4.3 架构解耦（PD 分离）。</span></figcaption>
+</figure><h3>背景：并发处理时 GPU 算力的浪费</h3><p>最简单的批处理是凑齐一批请求、同时开始、等整批都生成完再返回、再放下一批。它有三个致命问题：</p><ul>
+<li><strong>木桶效应</strong>：整批被最长的请求拖住，短请求早早算完也只能空等；</li>
+<li><strong>无法动态加入</strong>：新请求必须等上一批全部结束，期间 GPU 槽位空闲；</li>
+<li><strong>显存按最大长度预留</strong>：不管实际生成多少都按上限占位，内部碎片严重、且无法在请求间共享（3.2 的 PagedAttention 正是为解决这个问题）</li>
+</ul><figure class="fig">
+<svg aria-label="静态与连续批处理时序对比" role="img" viewbox="0 0 900 300">
+<g font-family="inherit">
+<text fill="#16233a" font-size="13.5" font-weight="700" x="40" y="30">Static Batching</text>
+<text fill="#16233a" font-size="13.5" font-weight="700" x="40" y="150">Continuous</text>
+<text fill="#697a92" font-size="11" x="40" y="166">iteration 级调度</text>
+<!-- static rows, cells start x=140 step30 w28 h22 -->
+<g>
+<!-- r1 work5 -->
+<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="40"></rect><rect height="22" rx="3" width="28" x="170" y="40"></rect><rect height="22" rx="3" width="28" x="200" y="40"></rect><rect height="22" rx="3" width="28" x="230" y="40"></rect><rect height="22" rx="3" width="28" x="260" y="40"></rect></g>
+<g fill="#eef1f5"><rect height="22" rx="3" width="28" x="290" y="40"></rect><rect height="22" rx="3" width="28" x="320" y="40"></rect><rect height="22" rx="3" width="28" x="350" y="40"></rect></g>
+<!-- r2 work7 -->
+<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="66"></rect><rect height="22" rx="3" width="28" x="170" y="66"></rect><rect height="22" rx="3" width="28" x="200" y="66"></rect><rect height="22" rx="3" width="28" x="230" y="66"></rect><rect height="22" rx="3" width="28" x="260" y="66"></rect><rect height="22" rx="3" width="28" x="290" y="66"></rect><rect height="22" rx="3" width="28" x="320" y="66"></rect></g>
+<rect fill="#eef1f5" height="22" rx="3" width="28" x="350" y="66"></rect>
+<!-- r3 work4 -->
+<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="92"></rect><rect height="22" rx="3" width="28" x="170" y="92"></rect><rect height="22" rx="3" width="28" x="200" y="92"></rect><rect height="22" rx="3" width="28" x="230" y="92"></rect></g>
+<g fill="#eef1f5"><rect height="22" rx="3" width="28" x="260" y="92"></rect><rect height="22" rx="3" width="28" x="290" y="92"></rect><rect height="22" rx="3" width="28" x="320" y="92"></rect><rect height="22" rx="3" width="28" x="350" y="92"></rect></g>
+<!-- r4 work8 -->
+<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="118"></rect><rect height="22" rx="3" width="28" x="170" y="118"></rect><rect height="22" rx="3" width="28" x="200" y="118"></rect><rect height="22" rx="3" width="28" x="230" y="118"></rect><rect height="22" rx="3" width="28" x="260" y="118"></rect><rect height="22" rx="3" width="28" x="290" y="118"></rect><rect height="22" rx="3" width="28" x="320" y="118"></rect><rect height="22" rx="3" width="28" x="350" y="118"></rect></g>
+<line stroke="#e8590c" stroke-width="2" x1="386" x2="386" y1="34" y2="146"></line>
+<text fill="#e8590c" font-size="11" font-weight="700" x="394" y="60">最慢者决定整批</text>
+<text fill="#e8590c" font-size="11" x="394" y="76">空槽无法复用</text>
+</g>
+<line stroke="#d7dee8" x1="40" x2="880" y1="158" y2="158"></line>
+<!-- continuous rows y=180,206,232,258 -->
+<g>
+<!-- r1: A 0..4 navy, E 5..7 orange -->
+<g fill="#23456f"><rect height="22" rx="3" width="28" x="140" y="180"></rect><rect height="22" rx="3" width="28" x="170" y="180"></rect><rect height="22" rx="3" width="28" x="200" y="180"></rect><rect height="22" rx="3" width="28" x="230" y="180"></rect><rect height="22" rx="3" width="28" x="260" y="180"></rect></g>
+<g fill="#e8590c"><rect height="22" rx="3" width="28" x="290" y="180"></rect><rect height="22" rx="3" width="28" x="320" y="180"></rect><rect height="22" rx="3" width="28" x="350" y="180"></rect></g>
+<!-- r2: B 0..6 blue, F 7 purple -->
+<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="206"></rect><rect height="22" rx="3" width="28" x="170" y="206"></rect><rect height="22" rx="3" width="28" x="200" y="206"></rect><rect height="22" rx="3" width="28" x="230" y="206"></rect><rect height="22" rx="3" width="28" x="260" y="206"></rect><rect height="22" rx="3" width="28" x="290" y="206"></rect><rect height="22" rx="3" width="28" x="320" y="206"></rect></g>
+<rect fill="#6d5bd0" height="22" rx="3" width="28" x="350" y="206"></rect>
+<!-- r3: C starts1 teal 1..5, G 6..7 -->
+<rect fill="#eef1f5" height="22" rx="3" width="28" x="140" y="232"></rect>
+<g fill="#0d9488"><rect height="22" rx="3" width="28" x="170" y="232"></rect><rect height="22" rx="3" width="28" x="200" y="232"></rect><rect height="22" rx="3" width="28" x="230" y="232"></rect><rect height="22" rx="3" width="28" x="260" y="232"></rect><rect height="22" rx="3" width="28" x="290" y="232"></rect></g>
+<g fill="#3f9bb5"><rect height="22" rx="3" width="28" x="320" y="232"></rect><rect height="22" rx="3" width="28" x="350" y="232"></rect></g>
+<!-- r4: D 0..2 gold, H 3..6 #c2693a, I 7 #4e8c7a -->
+<g fill="#b9832b"><rect height="22" rx="3" width="28" x="140" y="258"></rect><rect height="22" rx="3" width="28" x="170" y="258"></rect><rect height="22" rx="3" width="28" x="200" y="258"></rect></g>
+<g fill="#c2693a"><rect height="22" rx="3" width="28" x="230" y="258"></rect><rect height="22" rx="3" width="28" x="260" y="258"></rect><rect height="22" rx="3" width="28" x="290" y="258"></rect><rect height="22" rx="3" width="28" x="320" y="258"></rect></g>
+<rect fill="#4e8c7a" height="22" rx="3" width="28" x="350" y="258"></rect>
+</g>
+<text fill="#16233a" font-size="11.5" x="430" y="196">不同颜色 = 不同请求；谁完成就立刻在该槽位放入新请求</text>
+<text fill="#0d9488" font-size="11.5" font-weight="700" x="430" y="246">每个 iteration 重新组 batch，GPU 几乎不空闲</text>
+<text fill="#697a92" font-size="11" x="430" y="276">吞吐显著高于静态批处理（业界主流默认）</text>
+</g>
+</svg>
+<figcaption><b>图 20</b><span>Static Batching（上）整批同进同出，短请求空等最慢者、槽位浪费；Continuous Batching（下）把调度粒度从“整批”细化到<strong>每个 iteration（一次前向）</strong>，请求完成后立即在空槽插入新请求，GPU 持续满载。</span></figcaption>
+</figure><p>浪费之外，再算清单卡的理论天花板，才知道优化空间有多大。</p><style>
+    .flow4{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:18px 0}
+    .fstep{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;position:relative}
+    .fstep .k{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700}
+    .fstep .v{font-size:14px;font-weight:700;margin-top:4px;color:var(--ink)}
+    .fstep small{font-size:11.5px;color:var(--muted)}
+    .farrow{align-self:center;color:var(--muted);font-size:18px}
+  </style><div class="flow4">
+<div class="fstep"><div class="k">STEP 1 · 权重</div><div class="v">7B × 2B ≈ 14 GiB</div><small>FP16/BF16 常驻显存，A10 24GB 可容纳</small></div>
+<span class="farrow">→</span>
+<div class="fstep"><div class="k">STEP 2 · 带宽</div><div class="v">600 GB/s</div><small>A10 GDDR6 峰值（H100 为 3.35TB/s）</small></div>
+<span class="farrow">→</span>
+<div class="fstep"><div class="k">STEP 3 · 读一遍</div><div class="v">14 / 600 ≈ 23 ms</div><small>单 token 最短访存时间</small></div>
+<span class="farrow">→</span>
+<div class="fstep"><div class="k">STEP 4 · 理论上限</div><div class="v">1 / 23ms ≈ 43 TPS</div><small>batch=1、纯读权重</small></div>
+</div><div class="callout c-gold"><span class="ct">理论 vs 现实</span><p>A10 上 7B 单请求实测约 <strong>30 TPS 量级</strong>（随上下文变长继续下降）——因为还要读取随序列增长的 KV Cache、kernel launch / 调度开销、带宽利用率不可能 100%；同口径 H100 理论天花板约 238 TPS。<strong>理论值的意义是给出“天花板”</strong>：当实测离天花板很远时，说明还有调度或访存可挖；batch 拼大后吞吐可逼近“带宽×算术强度”的整体上限。</p></div><small class="note">MoE 口径：上面按“每步读全部权重”估算；MoE 模型每步只读<strong>激活专家</strong>的权重，如 Qwen3-30B-A3B 单 token 约读 3.3B × 2B ≈ 6.6 GiB，A10 上的理论天花板相应抬到 ~90 TPS 量级——代价是 30.5B 总参数仍需完整装进显存（单机放不下就要多卡并行分摊，见 4.3）。</small><p>谈优化前还要先定义「好」：下面这套指标贯穿本章与第 3 章。</p><div class="tbl-scroll">
+<table>
+<colgroup><col style="width:15%"/><col style="width:55%"/><col style="width:30%"/></colgroup>
+<thead><tr><th>指标</th><th>含义</th><th>主要相关阶段/手段</th></tr></thead>
+<tbody>
+<tr><td>TTFT</td><td>Time To First Token，发出请求到看到第一个字的时间，最影响“快不快”的第一印象</td><td>Prefill；FlashAttn / PD 分离</td></tr>
+<tr><td>ITL</td><td>Inter-Token Latency，相邻 token 间隔，决定流式输出是否“卡顿”</td><td>Decode；Chunked Prefill / 减 KV</td></tr>
+<tr><td>TPOT</td><td>Time Per Output Token，每输出 token 平均耗时（含首字口径差异）</td><td>Decode</td></tr>
+<tr><td>TPS / 吞吐</td><td>系统每秒生成 token 数（聚合所有请求），决定单卡能扛多少用户</td><td>Batching / 分页 / PD 分离</td></tr>
+<tr><td>TBT</td><td>Time Between Tokens，更严格的逐 token 间隔 SLO（如 P99 &lt; 某阈值）</td><td>调度 / Chunked Prefill</td></tr>
+<tr><td>TTLT</td><td>Time To Last Token，完整响应时延（非流式场景）</td><td>全链路</td></tr>
+<tr><td>Goodput</td><td>在 SLO（TTFT/ITL）达标前提下的有效吞吐，比裸吞吐更有意义</td><td>PD 分离的核心优化目标</td></tr>
+</tbody>
+</table>
+</div><div class="tbl-scroll">
+<table>
+<colgroup><col style="width:30%"/><col style="width:22%"/><col style="width:48%"/></colgroup>
+<thead><tr><th>现象 / 问题</th><th>看哪个指标</th><th>对应手段</th></tr></thead>
+<tbody>
+<tr><td>第一个字等太久</td><td>TTFT ↑</td><td>FlashAttention、Prefill 并行、PD 分离、前缀缓存</td></tr>
+<tr><td>打字机一卡一卡</td><td>ITL P99 尖刺</td><td>Chunked Prefill、Continuous Batching、压缩 KV</td></tr>
+<tr><td>单卡扛不住并发</td><td>TPS / Goodput ↓</td><td>Continuous Batching、PagedAttention、PD 分离</td></tr>
+<tr><td>长上下文 OOM</td><td>显存占用</td><td>MLA、KV 量化、KV 驱逐、分页</td></tr>
+<tr><td>JSON / 代码格式非法</td><td>格式合规率</td><td>约束解码（Outlines / XGrammar / GBNF）</td></tr>
+</tbody>
+</table>
+</div><h3>机内优化：动态拼批、切块调度与前缀复用</h3><p>4.1 的痛点对应三类机内手段：调度粒度细化到 iteration（Continuous Batching）、长 Prefill 切块交错（Chunked Prefill）、公共前缀缓存复用（RadixAttention）；显存摆放问题（PagedAttention）已在 3.2 讲过。</p><p><strong>Continuous Batching</strong>（ORCA 首创）把调度单位从「整批」细化到每个 iteration（一次前向）：完成的请求立刻离开、空槽插入新请求，GPU 持续满载（时序对比见上图）。</p><div class="paper sys"><span class="pid">ORCA</span><div><div class="ptitle">Orca: A Distributed Serving System for Transformer-Based Generative Models</div><div class="pinfo">Yu et al. · OSDI 2022 · 首次提出 iteration-level 调度与 selective batching，是连续批处理的源头</div></div><a href="https://www.usenix.org/conference/osdi22/presentation/yu">USENIX OSDI'22</a></div><p>Continuous Batching 还有一个高负载下绕不开的问题：<strong>KV Cache 不够装时怎么办</strong>。当并发请求的 KV 总量逼近显存上限，调度器必须<strong>抢占（Preemption）</strong>一部分请求腾地方——vLLM 提供两种策略：<strong>重计算（Recompute）</strong>，丢弃被抢占请求的全部 KV、轮到时重跑 Prefill，实现简单但时延开销大；<strong>换出（Swap）</strong>，把 KV 临时搬到 CPU 内存、轮到时再搬回，省算力但吃 PCIe 带宽。工程上通常配合优先级队列与最大并发上限，把抢占压成偶发事件——<strong>频繁抢占本身就是“该扩容或上 PD 分离（4.3）”的信号</strong>。</p><p>Prefill 是 Compute-Bound，一个几万 token 的长请求会<strong>连续占用 GPU 多个 iteration</strong>，期间正在 Decode 的请求得不到调度，ITL 出现尖刺、用户明显卡顿。<strong>Chunked Prefill 把长 Prefill 切成固定小块（chunk），与 Decode 请求在 iteration 级别交错执行</strong>，必要时还把多个 prefill 块拼进同一 batch，兼顾首 token 时延与吞吐。<strong>chunk 大小是关键参数</strong>：切得太小，Prefill 效率下降、调度开销上升；切得太大，ITL 尖刺依旧。vLLM 默认 chunk 约 2048 token（长 prompt 场景可调大到 4096–8192），正确姿势是固定业务流量、按 TTFT 与 ITL P99 实测调参。</p><figure class="fig">
+<svg aria-label="Chunked Prefill 交错调度" role="img" viewbox="0 0 900 220">
+<g font-family="inherit">
+<text fill="#16233a" font-size="13" font-weight="700" x="40" y="40">无 Chunked：长 Prefill 独占</text>
+<rect fill="#e8590c" height="34" rx="6" width="300" x="130" y="52"></rect><text fill="#fff" font-size="12.5" font-weight="700" text-anchor="middle" x="280" y="74">Prefill（连续数百 iteration）</text>
+<g fill="#0d9488"><rect height="34" rx="5" width="30" x="436" y="52"></rect><rect height="34" rx="5" width="30" x="470" y="52"></rect></g>
+<text fill="#d7541a" font-size="11.5" x="130" y="116">Decode 请求全程排队 → ITL 尖刺、卡顿</text>
+<line stroke="#d7dee8" x1="40" x2="880" y1="134" y2="134"></line>
+<text fill="#16233a" font-size="13" font-weight="700" x="40" y="160">Chunked：切块与 Decode 交错</text>
+<g>
+<rect fill="#e8590c" height="32" rx="6" width="66" x="130" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="202" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="238" y="170"></rect>
+<rect fill="#e8590c" height="32" rx="6" width="66" x="274" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="346" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="382" y="170"></rect>
+<rect fill="#e8590c" height="32" rx="6" width="66" x="418" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="490" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="526" y="170"></rect>
+<rect fill="#e8590c" height="32" rx="6" width="66" x="562" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="634" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="670" y="170"></rect>
+</g>
+<text fill="#0d9488" font-size="11.5" font-weight="700" x="710" y="190">P=Prefill块　D=Decode</text>
+<text fill="#697a92" font-size="11" x="710" y="206">ITL 保持平滑</text>
+</g>
+</svg>
+<figcaption><b>图 21</b><span>Chunked Prefill：长 Prefill 被切成 chunk（橙）与 Decode（青）在 iteration 级交错，避免长请求阻塞解码；现代推理引擎（vLLM / SGLang / TensorRT-LLM）均已默认开启。</span></figcaption>
+</figure><div class="grid2">
+<div class="paper sys"><span class="pid">SARATHI</span><div><div class="ptitle">Sarathi: Efficient LLM Inference by Pipelining Token Computation (Chunked Prefill)</div><div class="pinfo">Agrawal et al. · 2023 · 首次提出 chunked prefill + decode 流水</div></div><a href="https://arxiv.org/abs/2308.16369">arXiv:2308.16369</a></div>
+<div class="paper sys"><span class="pid">SARATHI-SERVE</span><div><div class="ptitle">Sarathi-Serve: Chase Away Prefix Queue Under Chunked Prefills</div><div class="pinfo">Agrawal et al. · OSDI 2024 · Stall-free 调度，延迟与吞吐协同</div></div><a href="https://arxiv.org/abs/2403.02310">arXiv:2403.02310</a></div>
+</div><p>多轮对话、Agent、共享系统提示、few-shot 场景里，大量请求共享相同前缀。SGLang 提出 <strong>RadixAttention</strong>：用一棵 <strong>基数树（Radix Tree）</strong>维护所有处理过的 prompt，新请求自动做<strong>最长前缀匹配</strong>，命中的 KV 直接复用、未命中部分才算；缓存紧张时按 <strong>LRU 驱逐</strong>最少使用的叶子。它与 PagedAttention 是搭档——分页管“块怎么放”，基数树管“哪些前缀能复用”。</p><figure class="fig">
+<svg aria-label="RadixAttention 前缀树" role="img" viewbox="0 0 900 300">
+<g font-family="inherit" text-anchor="middle">
+<!-- edges -->
+<g fill="none" stroke="#8fa3b8" stroke-width="2">
+<line x1="450" x2="450" y1="68" y2="92"></line><line x1="450" x2="450" y1="126" y2="150"></line><line x1="450" x2="450" y1="184" y2="208"></line>
+<path d="M450,242 L450,254 L180,254 L180,266"></path><path d="M450,254 L450,266"></path><path d="M450,242 L450,254 L720,254 L720,266"></path>
+</g>
+<!-- prefix cached nodes -->
+<g fill="#0d9488">
+<rect height="34" rx="8" width="90" x="405" y="34"></rect><rect height="34" rx="8" width="90" x="405" y="92"></rect>
+<rect height="34" rx="8" width="110" x="395" y="150"></rect><rect height="34" rx="8" width="80" x="410" y="208"></rect>
+</g>
+<g fill="#fff" font-size="13" font-weight="700">
+<text x="450" y="56">ROOT</text><text x="450" y="114">The</text><text x="450" y="172">capital</text><text x="450" y="230">of</text>
+</g>
+<!-- branch nodes -->
+<rect fill="#fff" height="30" rx="8" stroke="#94a3b8" width="150" x="105" y="266"></rect>
+<rect fill="#fff" height="30" rx="8" stroke="#94a3b8" width="150" x="375" y="266"></rect>
+<rect fill="#fff" height="30" rx="8" stroke="#94a3b8" width="150" x="645" y="266"></rect>
+<g fill="#16233a" font-size="12"><text x="180" y="286">Britain → London</text><text x="450" y="286">France → Paris</text><text x="720" y="286">China → Beijing</text></g>
+<text fill="#0d9488" font-size="11.5" font-weight="700" text-anchor="start" x="60" y="52">青色节点：公共前缀</text>
+<text fill="#0d9488" font-size="11" text-anchor="start" x="60" y="70">一次计算、多请求复用</text>
+<text fill="#697a92" font-size="11" text-anchor="start" x="60" y="278">叶子可 LRU 驱逐</text>
+</g>
+</svg>
+<figcaption><b>图 22</b><span>RadixAttention 基数树：“The capital of”作为公共前缀只算一次并被三个请求共享；分叉部分各自计算。多轮对话 / Agent / 公共 system prompt 场景命中率极高。</span></figcaption>
+</figure><div class="paper sys"><span class="pid">SGLANG</span><div><div class="ptitle">SGLang: Efficient Execution of Structured Language Model Programs</div><div class="pinfo">Zheng et al. · NeurIPS 2024/2025 · RadixAttention 自动前缀复用 + 结构化生成运行时</div></div><a href="https://arxiv.org/abs/2312.07104">arXiv:2312.07104</a></div><p>一个工程提醒：RadixAttention 的收益完全取决于<strong>前缀命中率</strong>——多轮对话、共享 system prompt、Agent 场景命中率常超过 50%；但如果业务里每条 prompt 都互不相同（如独立文档的离线批处理），前缀缓存只会白占显存，此时应调低缓存容量甚至关闭。上线前用真实流量统计命中率（vLLM / SGLang 均暴露 prefix cache hit rate 指标），比盲目开启更重要。</p><h3>架构级优化：PD 分离</h3><p>当 Prefill 与 Decode 的资源矛盾在机内无法靠调度调和时，必然走向架构解耦。</p><p><strong>为什么必须分离：两阶段资源诉求相差约 140 倍。</strong></p><p>同一个模型、同一块卡，Prefill 与 Decode 的吞吐差距是数量级的。以 20 层模型在消费级卡上的实测为例（视频作者数据）：<strong>Prefill 约 14,000 token/s，Decode 约 100 token/s，相差约 140 倍</strong>。更麻烦的是二者对硬件的偏好相反：</p><ul>
+<li><strong>Prefill</strong> 要<strong>强算力</strong>（高 FLOPs、可接受较小显存），算力越猛 TTFT 越低；</li>
+<li><strong>Decode</strong> 要<strong>大显存 + 高带宽</strong>（装得下权重与大量 KV、搬得快），算力反而不重要。</li>
+</ul><p>把两阶段<strong>混部（Co-located）</strong>在同一批 GPU 上，会互相干扰：长 Prefill 拖慢 Decode 的 ITL，Decode 又占着算力让 Prefill 排队，资源配比无法同时满足两边，整体利用率与 SLO 双输。</p><figure class="fig">
+<svg aria-label="Prefill Decode 吞吐差距与利用率对比" role="img" viewbox="0 0 900 280">
+<g font-family="inherit">
+<text fill="#16233a" font-size="13" font-weight="700" x="40" y="40">吞吐差距（20 层模型实测）</text>
+<line stroke="#94a3b8" x1="80" x2="360" y1="236" y2="236"></line>
+<rect fill="#0d9488" height="160" rx="6" width="70" x="110" y="76"></rect>
+<text fill="#0d9488" font-size="12" font-weight="700" text-anchor="middle" x="145" y="66">Prefill</text>
+<text fill="#fff" font-size="11" text-anchor="middle" x="145" y="96">~14,000</text>
+<text fill="#d4ece9" font-size="10" text-anchor="middle" x="145" y="112">tok/s</text>
+<rect fill="#b9832b" height="22" rx="6" width="70" x="230" y="214"></rect>
+<text fill="#b9832b" font-size="12" font-weight="700" text-anchor="middle" x="265" y="206">Decode ~100 tok/s</text>
+<text fill="#e8590c" font-family="JetBrains Mono" font-size="16" font-weight="800" text-anchor="middle" x="200" y="264">≈ 140×</text>
+<line stroke="#d7dee8" stroke-dasharray="5 5" x1="400" x2="400" y1="40" y2="250"></line>
+<text fill="#16233a" font-size="13" font-weight="700" x="430" y="40">集群利用率（示意）</text>
+<text fill="#3c4d66" font-size="12" x="430" y="92">混部 Co-located</text>
+<rect fill="#eef1f5" height="22" rx="6" width="400" x="430" y="100"></rect>
+<rect fill="#23456f" height="22" rx="6" width="160" x="430" y="100"></rect>
+<text fill="#fff" font-size="11" font-weight="700" x="600" y="116">~40%（互相干扰）</text>
+<text fill="#3c4d66" font-size="12" x="430" y="160">PD 分离 Disaggregated</text>
+<rect fill="#e2f1ef" height="22" rx="6" width="400" x="430" y="168"></rect>
+<rect fill="#0d9488" height="22" rx="6" width="340" x="430" y="168"></rect>
+<text fill="#fff" font-size="11" font-weight="700" text-anchor="end" x="782" y="184">~85%</text>
+<text fill="#697a92" font-size="11" x="430" y="214">两类资源独立扩缩容、各跑最适合的阶段</text>
+<text fill="#e8590c" font-size="11" font-weight="700" x="430" y="232">Mooncake：吞吐 +75%、TTFT −25%</text>
+</g>
+</svg>
+<figcaption><b>图 23</b><span>左：Prefill/Decode 吞吐差约两个数量级；右：混部互相干扰、利用率低，PD 分离后两类资源独立配比、利用率与 SLO 同时改善（数值为论文/实测量级，具体随模型与硬件变化）。</span></figcaption>
+</figure><p><strong>怎么做：两池拆分，KV 迁移。</strong></p><p>核心是把两阶段拆到不同 GPU 池、<strong>各自独立扩缩容</strong>：请求先进 Prefill 池完成提示计算与首 token，生成的 KV Cache 通过高速互联<strong>整体搬运/复制</strong>到 Decode 池，再由 Decode 池完成后续自回归生成并流式返回。难点不在“拆”，而在<strong>KV Cache 的高效迁移与全局调度</strong>。</p><figure class="fig">
+<svg aria-label="PD 分离架构" role="img" viewbox="0 0 900 310">
+<defs><marker id="ar5" markerheight="10" markerwidth="10" orient="auto" refx="8" refy="5"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"></path></marker></defs>
+<g font-family="inherit">
+<!-- scheduler -->
+<rect fill="#16233a" height="40" rx="10" width="240" x="330" y="20"></rect>
+<text fill="#fff" font-size="13.5" font-weight="700" text-anchor="middle" x="450" y="46">全局调度器 / 路由（SLO 感知）</text>
+<!-- prefill pool -->
+<rect fill="#e7eff9" height="160" rx="14" stroke="#23456f" stroke-width="1.6" width="250" x="50" y="92"></rect>
+<text fill="#23456f" font-size="14" font-weight="800" text-anchor="middle" x="175" y="118">Prefill GPU 池</text>
+<g fill="#23456f">
+<rect height="44" rx="7" width="62" x="78" y="134"></rect><rect height="44" rx="7" width="62" x="150" y="134"></rect><rect height="44" rx="7" width="56" x="222" y="134"></rect>
+<rect height="44" rx="7" width="62" x="78" y="188"></rect><rect height="44" rx="7" width="62" x="150" y="188"></rect><rect height="44" rx="7" width="56" x="222" y="188"></rect>
+</g>
+<text fill="#23456f" font-size="11" text-anchor="middle" x="175" y="246">高 FLOPs 配置，算力优先</text>
+<!-- transfer -->
+<rect fill="#0d9488" height="104" rx="14" width="160" x="370" y="120"></rect>
+<text fill="#fff" font-size="13.5" font-weight="800" text-anchor="middle" x="450" y="152">KV 迁移层</text>
+<text fill="#d4ece9" font-size="11" text-anchor="middle" x="450" y="174">RDMA / NVLink</text>
+<text fill="#d4ece9" font-size="11" text-anchor="middle" x="450" y="192">GPUDirect / NIXL</text>
+<text fill="#bfe0db" font-size="10.5" text-anchor="middle" x="450" y="214">页对齐、零拷贝传输</text>
+<!-- decode pool -->
+<rect fill="#f7efdd" height="160" rx="14" stroke="#b9832b" stroke-width="1.6" width="250" x="600" y="92"></rect>
+<text fill="#b9832b" font-size="14" font-weight="800" text-anchor="middle" x="725" y="118">Decode GPU 池</text>
+<g fill="#b9832b">
+<rect height="44" rx="7" width="62" x="628" y="134"></rect><rect height="44" rx="7" width="62" x="700" y="134"></rect><rect height="44" rx="7" width="56" x="772" y="134"></rect>
+<rect height="44" rx="7" width="62" x="628" y="188"></rect><rect height="44" rx="7" width="62" x="700" y="188"></rect><rect height="44" rx="7" width="56" x="772" y="188"></rect>
+</g>
+<text fill="#b9832b" font-size="11" text-anchor="middle" x="725" y="246">大显存 / 高带宽配置</text>
+<!-- arrows -->
+<g fill="none" marker-end="url(#ar5)" stroke="#3c4d66" stroke-width="2">
+<path d="M380,46 L175,92"></path><path d="M520,46 L725,92"></path>
+<line x1="300" x2="366" y1="172" y2="172"></line><line x1="530" x2="596" y1="172" y2="172"></line>
+</g>
+<text fill="#3c4d66" font-size="10.5" text-anchor="middle" x="333" y="162">推送 KV</text>
+<line marker-end="url(#ar5)" stroke="#e8590c" stroke-width="2" x1="725" x2="725" y1="252" y2="282"></line>
+<text fill="#e8590c" font-size="11.5" font-weight="700" text-anchor="middle" x="725" y="300">流式输出 token</text>
+</g>
+</svg>
+<figcaption><b>图 24</b><span>PD 分离架构：全局调度器把请求导向 Prefill 池，KV 经高速迁移层送到 Decode 池独立生成。两池硬件型号、卡数、并行策略可完全不同，按各自瓶颈独立扩缩容。</span></figcaption>
+</figure><p><strong>两池内部的并行策略也可以各自选。</strong>推理常用的并行方式有三种：<strong>张量并行（TP）</strong>把每层权重切到多卡、每层两次 AllReduce——Decode 带宽受限时，TP 让单卡搬运量除以 N（图 25），是 Decode 池最常用的手段，代价是通信随卡数上升（A10 无 NVLink、走 PCIe，一般不超过 2–4 卡）；<strong>流水并行（PP）</strong>按层切分、卡间只传激活，通信少但调度复杂，推理用得少；<strong>专家并行（EP）</strong>是 MoE 专属，专家分到不同卡、token 经 All-to-All 路由。Prefill 池偏算力、常配较大 TP；Decode 池偏带宽与显存，TP / EP 按 KV 容量与带宽目标定——这就是图 24 里“两池并行策略可完全不同”的具体含义。</p>
+<figure class="fig">
+<svg aria-label="张量并行 TP 切分与 AllReduce" role="img" viewbox="0 0 900 320">
+<g font-family="inherit">
+<text fill="#697a92" font-size="11.5" font-weight="700" x="40" y="60">一层权重矩阵 W（按列切成 4 块）</text>
+<g>
+<rect fill="#0d9488" height="150" opacity="0.9" width="45" x="40" y="76"></rect>
+<rect fill="#0d9488" height="150" opacity="0.65" width="45" x="85" y="76"></rect>
+<rect fill="#0d9488" height="150" opacity="0.4" width="45" x="130" y="76"></rect>
+<rect fill="#0d9488" height="150" opacity="0.2" width="45" x="175" y="76"></rect>
+<rect fill="none" height="150" rx="6" stroke="#0f766e" width="180" x="40" y="76"></rect>
+</g>
+<g fill="none" stroke="#8fa3b8" stroke-width="1.8">
+<line x1="222" x2="324" y1="151" y2="56"></line><line x1="222" x2="324" y1="151" y2="124"></line>
+<line x1="222" x2="324" y1="151" y2="192"></line><line x1="222" x2="324" y1="151" y2="260"></line>
+</g>
+<g font-size="11.5">
+<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="30"></rect>
+<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="98"></rect>
+<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="166"></rect>
+<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="234"></rect>
+</g>
+<g fill="#16233a" font-size="12" text-anchor="middle">
+<text x="416" y="52">GPU 0 · 列块 1/4</text><text x="416" y="120">GPU 1 · 列块 2/4</text>
+<text x="416" y="188">GPU 2 · 列块 3/4</text><text x="416" y="256">GPU 3 · 列块 4/4</text>
+</g>
+<g fill="#697a92" font-size="10.5" text-anchor="middle">
+<text x="416" y="70">各算部分和</text><text x="416" y="138">各算部分和</text>
+<text x="416" y="206">各算部分和</text><text x="416" y="274">各算部分和</text>
+</g>
+<g fill="none" stroke="#e8590c" stroke-width="2">
+<line x1="506" x2="572" y1="56" y2="128"></line><line x1="506" x2="580" y1="124" y2="140"></line>
+<line x1="506" x2="580" y1="192" y2="162"></line><line x1="506" x2="572" y1="260" y2="176"></line>
+</g>
+<ellipse cx="652" cy="151" fill="#e8590c" rx="86" ry="50"></ellipse>
+<text fill="#fff" font-size="13" font-weight="700" text-anchor="middle" x="652" y="146">AllReduce</text>
+<text fill="#fde3d3" font-size="10.5" text-anchor="middle" x="652" y="166">各部分和跨卡相加</text>
+<g fill="none" stroke="#8fa3b8" stroke-width="2"><line x1="740" x2="806" y1="151" y2="151"></line><path d="M806,145 L816,151 L806,157 Z" fill="#8fa3b8" stroke="none"></path></g>
+<text fill="#16233a" font-size="12" font-weight="700" x="822" y="155">完整输出</text>
+<text fill="#697a92" font-size="11" x="40" y="310">每层 2 次 AllReduce（注意力投影后、MLP 后）；Decode 带宽受限时单卡权重搬运量 ÷ N，代价是通信开销随卡数上升</text>
+</g>
+</svg>
+<figcaption><b>图 25</b><span>张量并行（TP）：把一层权重按列切到 4 张卡，各卡只存、只读自己的分块并算部分和，再经 AllReduce 合并出完整输出。Decode 池常用 TP 压低单卡搬运量；无 NVLink 的卡（如 A10）通信走 PCIe，TP 规模不宜大。</span></figcaption>
+</figure>
+<p><strong>三篇奠基论文，三种侧重。</strong></p><div class="paper gold"><span class="pid">DistServe</span><div><div class="ptitle">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized LLM Serving</div><div class="pinfo">Zhong et al. · UC Berkeley / UChicago · OSDI 2024 · 用 Goodput（SLO 达标吞吐）论证分离的必要性，两阶段独立部署、独立并行策略，Goodput 提升数量级</div></div><a href="https://arxiv.org/abs/2401.09670">arXiv:2401.09670</a></div><div class="paper gold"><span class="pid">Mooncake</span><div><div class="ptitle">Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving</div><div class="pinfo">Qin et al. · Moonshot AI / 清华大学 · FAST 2025 最佳论文（期刊扩展版 ACM TOS 2025）· 以 KV Cache 为中心，Prefill/Decode 分离 + 跨 GPU/CPU/SSD 的全局 KV Cache Pool 与 KV Agent 调度；集群吞吐 +75%、TTFT −25%（Kimi 生产验证，已开源）</div></div><a href="https://arxiv.org/abs/2407.00079">arXiv:2407.00079</a></div><div class="paper gold"><span class="pid">Splitwise</span><div><div class="ptitle">Splitwise: Efficient Generative LLM Inference Using Phase Splitting</div><div class="pinfo">Patel, Choukse et al. · Microsoft · ISCA 2024 · 把 Prefill/Decode 拆到<strong>最具性价比的异构硬件</strong>上（强算力卡跑 Prefill、大显存/低成本卡跑 Decode），以最小化每 token 成本，KV 经 RDMA 迁移</div></div><a href="https://arxiv.org/abs/2311.18677">arXiv:2311.18677</a></div><div class="tbl-scroll">
+<table>
+<colgroup><col style="width:16%"/><col style="width:30%"/><col style="width:28%"/><col style="width:26%"/></colgroup>
+<thead><tr><th>方案</th><th>核心主张</th><th>KV Cache 处理</th><th>最适合回答的问题</th></tr></thead>
+<tbody>
+<tr><td>DistServe</td><td>按 Goodput 重配资源，两阶段独立扩缩</td><td>Prefill→Decode 高速直传</td><td>“怎样让 SLO 达标吞吐最大？”</td></tr>
+<tr><td>Mooncake</td><td>KVCache-centric，全局多级缓存 + 全局调度</td><td>跨 GPU/CPU/SSD 的 KV Pool，可复用、可落盘</td><td>“超大规模多租户、多轮对话怎么省？”</td></tr>
+<tr><td>Splitwise</td><td>异构硬件按阶段分工，成本最优</td><td>跨机 RDMA 迁移</td><td>“怎样把每 token 成本打到最低？”</td></tr>
+</tbody>
+</table>
+</div><p><strong>关键工程问题：KV Cache 怎么搬。</strong></p><div class="tbl-scroll">
+<table>
+<colgroup><col style="width:22%"/><col style="width:24%"/><col style="width:30%"/><col style="width:24%"/></colgroup>
+<thead><tr><th>通道</th><th>典型带宽</th><th>适用范围</th><th>特点</th></tr></thead>
+<tbody>
+<tr><td>NVLink / NVSwitch</td><td>~900 GB/s（H100）</td><td>同一节点内 GPU 之间</td><td>最快，P/D 同机时首选</td></tr>
+<tr><td>RDMA（RoCE / InfiniBand）</td><td>400/800 Gb/s（约 50–100 GB/s）</td><td>跨节点、跨 P/D 池</td><td>绕过 CPU、零拷贝，生产主流</td></tr>
+<tr><td>GPUDirect (Storage/Memory)</td><td>随 PCIe/NIC</td><td>GPU 直访对端显存 / 存储</td><td>避免经主机内存中转</td></tr>
+<tr><td>PCIe / TCP 回退</td><td>较低</td><td>无高速互联时兜底</td><td>实现简单、延迟高</td></tr>
+</tbody>
+</table>
+</div><p>工程上还会做：KV 块<strong>页对齐、压缩后再传（FP8）、传输与计算重叠、只传增量</strong>，把迁移成本摊到流水线里，使它不成为新瓶颈。另一个配套手段是 <strong>KV 分层 offload</strong>：热 KV 留在 GPU 显存，温 KV 下沉 CPU 内存，冷 KV（如多轮对话的历史轮次）落 SSD——Mooncake 的全局 KV Pool 正是这一思路的集群化，让显存只装“正在用”的部分。</p>
+<figure class="fig">
+<svg aria-label="KV Cache 分层 offload：GPU、CPU、SSD" role="img" viewbox="0 0 900 290">
+<g font-family="inherit">
+<rect fill="#0d9488" height="64" rx="10" width="560" x="40" y="50"></rect>
+<text fill="#fff" font-size="13" font-weight="700" x="60" y="76">GPU HBM · 热 KV</text>
+<text fill="#c9efea" font-size="10.5" x="60" y="96">正在 Decode 的请求 · TB/s 级带宽 · 最贵</text>
+<g fill="#fff" opacity="0.85"><rect height="30" rx="5" width="44" x="380" y="67"></rect><rect height="30" rx="5" width="44" x="432" y="67"></rect><rect height="30" rx="5" width="44" x="484" y="67"></rect><rect height="30" rx="5" width="44" x="536" y="67"></rect></g>
+<rect fill="#8fa3b8" height="64" rx="10" width="560" x="40" y="140"></rect>
+<text fill="#fff" font-size="13" font-weight="700" x="60" y="166">CPU 内存 · 温 KV</text>
+<text fill="#e8eef4" font-size="10.5" x="60" y="186">被抢占 / 等待调度的请求 · 百 GB/s 级</text>
+<g fill="#fff" opacity="0.8"><rect height="30" rx="5" width="44" x="432" y="157"></rect><rect height="30" rx="5" width="44" x="484" y="157"></rect></g>
+<rect fill="#f1f5f9" height="48" rx="10" stroke="#d7dee8" width="560" x="40" y="230"></rect>
+<text fill="#475569" font-size="13" font-weight="700" x="60" y="252">SSD · 冷 KV</text>
+<text fill="#7c8aa0" font-size="10.5" x="60" y="269">多轮历史、跨会话复用 · GB/s 级 · 最便宜</text>
+<g fill="none" stroke="#697a92" stroke-width="2">
+<line x1="622" x2="622" y1="118" y2="134"></line><path d="M616,124 L622,116 L628,124 Z" fill="#697a92" stroke="none"></path><path d="M616,128 L622,136 L628,128 Z" fill="#697a92" stroke="none"></path>
+<line x1="622" x2="622" y1="208" y2="224"></line><path d="M616,214 L622,206 L628,214 Z" fill="#697a92" stroke="none"></path><path d="M616,218 L622,226 L628,218 Z" fill="#697a92" stroke="none"></path>
+</g>
+<g fill="#697a92" font-size="10.5"><text x="638" y="130">换出 / 换回</text><text x="638" y="220">落盘 / 加载</text></g>
+<text fill="#16233a" font-size="11.5" font-weight="700" x="722" y="130">命中即免重算 Prefill</text>
+<text fill="#697a92" font-size="10.5" x="722" y="150">Mooncake 把这套分层</text>
+<text fill="#697a92" font-size="10.5" x="722" y="167">做成集群级 KV Pool</text>
+</g>
+</svg>
+<figcaption><b>图 26</b><span>KV 分层 offload：热 KV 留 GPU 显存、温 KV 下沉 CPU 内存、冷 KV 落 SSD；请求重新激活时命中即免于重跑 Prefill。层级越往下带宽越低、成本越省——Mooncake 的 KV Pool 正是这一思路的集群化。</span></figcaption>
+</figure>
+<p><strong>前沿：PD 分离正在「产品化、标配化」。</strong></p><div class="callout c-teal"><span class="ct">NVIDIA Dynamo（2025 GTC 开源）</span><p>NVIDIA 推出的开源分布式推理编排框架，原生支持 <strong>Prefill/Decode 分离、GPU 异构与 SLO 感知路由</strong>，并配套 <strong>NIXL（NVIDIA Inference Xfer Library）</strong>做跨机 KV Cache 的异步零拷贝传输，与 TensorRT-LLM / vLLM 等引擎解耦。这标志着 PD 分离从“论文最佳实践”变成<strong>开箱即用的标准架构</strong>；vLLM、SGLang、Mooncake 也都已内置 disaggregated 模式。</p></div><div class="callout c-teal"><span class="ct">两章手段如何叠加</span><p>机内优化（4.2）把单块 GPU 打满，架构解耦（4.3）让两类资源独立扩缩；它们与第 3 章的 KV Cache 家族、FlashAttention、量化全部可叠加——最终目标都是 SLO 达标前提下最大化 Goodput、最小化每 token 成本。</p></div></section>
+<!-- ================= 第 5 章 · 采样 ================= -->
+<section class="wrap" id="ch5"><div class="sec-head"><span class="sec-no">05</span><h2>采样：从 logits 到下一个 ID</h2><span class="sub">SAMPLING</span></div><p>Transformer 最后一层输出的隐藏向量，先经 lm_head 输出投影变成词表维度的一批浮点数（logits），采样环节要回答：这批浮点数对应哪个 token ID。本章先在 5.1 建立 logits→ID 的完整背景（采样旋钮），再讲两个优化方向：限制候选的约束解码（5.2），以及把「一次前向只出一个 ID」变成「一次前向出多个 ID」的投机解码家族（5.3）。</p><figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="378" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><circle cx="566" cy="40" fill="#16233a" r="3.5"></circle><rect fill="#fff" height="48" rx="10" stroke="#16233a" stroke-width="1.7" width="116" x="508" y="44"></rect><text fill="#16233a" font-size="11.8" font-weight="800" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#7a8699" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">当前环节 · Sampling（logits 选 ID）</text></g></svg></figure><h3>背景：logits 怎样变成一个 ID</h3><p>确定性方法（贪心）直接取 logit 最大的 ID；随机方法先做 softmax 得到概率分布再按分布采样，并用一组旋钮调节随机性与重复度。</p><p>先补一笔容易被低估的账：<strong>lm_head 本身是词表维度的大矩阵乘</strong>（隐藏维 × 词表，如 4096 × 15 万）。Decode 阶段每个 token、每个请求都要过一次，大词表模型在 batch 较大时 lm_head 可占单步耗时的 10–30%。工程上的应对包括：词表维度做张量并行、lm_head 与采样融合为一个 kernel。这也回答了 02 章留下的悬念——同一张矩阵，<strong>Embedding 查表几乎免费，lm_head 全量投影却不便宜</strong>。</p><figure class="fig">
 <svg aria-label="温度 TopK TopP 示意" role="img" viewbox="0 0 900 230">
 <line stroke="#d7dee8" stroke-dasharray="5 5" x1="450" x2="450" y1="20" y2="200"></line>
 <g font-family="inherit" text-anchor="middle">
@@ -1268,7 +1646,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#697a92" font-size="11" text-anchor="middle" x="680" y="198">候选按概率排序，截断后重新归一化再采样</text>
 </g>
 </svg>
-<figcaption><b>图 19</b><span>左：温度对 softmax 的影响，$p_i\propto e^{z_i/T}$，T 越低越确定、越高越发散；右：Top-K 固定只在前 K 个候选采样，Top-P（nucleus）按累计概率动态截断——候选少而尖时少取、多而平时多取。</span></figcaption>
+<figcaption><b>图 27</b><span>左：温度对 softmax 的影响，$p_i\propto e^{z_i/T}$，T 越低越确定、越高越发散；右：Top-K 固定只在前 K 个候选采样，Top-P（nucleus）按累计概率动态截断——候选少而尖时少取、多而平时多取。</span></figcaption>
 </figure><div class="tbl-scroll">
 <table>
 <colgroup><col style="width:18%"/><col style="width:52%"/><col style="width:30%"/></colgroup>
@@ -1330,7 +1708,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </g>
 </g>
 </svg>
-<figcaption><b>图 20</b><span>约束解码：文法先编译成状态机（上），每步根据当前状态确定合法 token 集合；在 logit 层把非法位置屏蔽（下），采样只在合法集合中进行。输出从“概率上像”升级为“机制上必然合法”。</span></figcaption>
+<figcaption><b>图 28</b><span>约束解码：文法先编译成状态机（上），每步根据当前状态确定合法 token 集合；在 logit 层把非法位置屏蔽（下），采样只在合法集合中进行。输出从“概率上像”升级为“机制上必然合法”。</span></figcaption>
 </figure><div class="tbl-scroll">
 <table>
 <colgroup><col style="width:18%"/><col style="width:42%"/><col style="width:40%"/></colgroup>
@@ -1374,7 +1752,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#3c4d66" font-size="12" text-anchor="middle" x="450" y="210">关键：验证是<strong>并行</strong>的（一次前向处理 k 个候选），成本≈一次普通 decode，却可能一次确认多个 token</text>
 </g>
 </svg>
-<figcaption><b>图 21</b><span>Draft→Verify：猜测者快速连续写出 k 个候选，大模型用一次并行前向逐位置校验；接受最长正确前缀，在第一个错误位置按目标分布重采样，然后进入下一轮。</span></figcaption>
+<figcaption><b>图 29</b><span>Draft→Verify：猜测者快速连续写出 k 个候选，大模型用一次并行前向逐位置校验；接受最长正确前缀，在第一个错误位置按目标分布重采样，然后进入下一轮。</span></figcaption>
 </figure><h4>为什么能“无损”：拒绝采样的数学保证</h4><p>设目标模型分布为 $p(x)$、猜测者分布为 $q(x)$。对候选 token $x$，以概率</p><div class="formula-box">$$P(\text{接受}\,x)=\min\!\left(1,\frac{p(x)}{q(x)}\right)$$</div><p>决定接受；若被拒绝，则从修正分布 $r(x)\propto\max\big(0,\,p(x)-q(x)\big)$ 中重采样。可以证明：<strong>无论 $q$ 准不准，最终被接受的 token 分布严格等于目标分布 $p$</strong>。直觉上：猜测者认为概率不低于目标的 token（$q\ge p$）必然被接受；猜测者高估的 token 会以相应概率被拒、并“修正”回目标分布。猜测越准，接受长度越长、加速越多；猜得再差也只是退回普通解码，<strong>不会改变结果</strong>。</p><div class="paper spec"><span class="pid">SPEC-DEC</span><div><div class="ptitle">Fast Inference from Transformers via Speculative Decoding</div><div class="pinfo">Leviathan, Kalman, Matias · Google/DeepMind · ICML 2023 · 投机解码开山论文，小模型起草 + 大模型验证，证明无损并给出复杂度分析</div></div><a href="https://arxiv.org/abs/2211.17192">arXiv:2211.17192</a></div><div class="paper spec"><span class="pid">SPEC-SAMP</span><div><div class="ptitle">Accelerating Large Language Model Decoding with Speculative Sampling</div><div class="pinfo">Chen et al. · DeepMind · 2023 · 独立提出投机采样（拒绝采样），在对话模型上约 2× 加速</div></div><a href="https://arxiv.org/abs/2302.01318">arXiv:2302.01318</a></div><p><strong>接受率的实战经验</strong>：温度越高，草稿与目标分布差异越大、接受率越低，高温创作场景收益会缩水；代码、数学、格式化输出（JSON/SQL）等“高可预测”任务接受长度最长——IDE 补全最先吃到投机红利正因此。评估时<strong>按自家任务的温度与内容分布实测接受率</strong>，别直接搬论文数字。</p><h4>自投机：用模型自己的“浅层”当草稿</h4><p>不想维护一个独立小模型，可以让<strong>目标模型自身在中间层提前输出（Early Exit / 早退）</strong>：用浅层快速起草，再走完整网络验证。只需少量微调让浅层具备预测能力，权重完全共享、部署简单，属于“自投机（Self-Speculative）”。</p><div class="paper spec"><span class="pid">D&amp;V</span><div><div class="ptitle">Draft &amp; Verify: Lossless Large Language Model Acceleration via Self-Speculative Decoding</div><div class="pinfo">Zhang et al. · 2023 · 自投机解码代表作，浅层起草 / 深层验证，无损</div></div><a href="https://arxiv.org/abs/2309.08168">arXiv:2309.08168</a></div><h4>Medusa：给大模型加几个“候选头”</h4><p>Medusa 在冻结的目标模型上<strong>新增若干轻量解码头（Medusa Heads）</strong>：头 1 预测下一个位置、头 2 预测下两个位置……各头给出 top 候选，组合成一棵<strong>候选树</strong>；再用 <strong>Tree Attention</strong>（为每条候选路径构造对应因果掩码）在<strong>一次前向</strong>里验证整棵树。它不需要逐步自回归起草，配合典型采样（typical sampling）与前缀树，典型加速 2.2–3.6×。</p><figure class="fig">
 <svg aria-label="Medusa 多头与候选树" role="img" viewbox="0 0 900 280">
 <g font-family="inherit">
@@ -1402,7 +1780,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#3c4d66" font-size="11.5" text-anchor="middle" x="600" y="252">Tree Attention：一次前向、按路径掩码验证整棵树</text>
 </g>
 </svg>
-<figcaption><b>图 22</b><span>Medusa：冻结主干 + 多个新增候选头，对未来 k 个位置各提 top 候选并组合成树；Tree Attention 用自定义因果掩码在一次前向中验证所有路径，命中即一次输出多个 token。</span></figcaption>
+<figcaption><b>图 30</b><span>Medusa：冻结主干 + 多个新增候选头，对未来 k 个位置各提 top 候选并组合成树；Tree Attention 用自定义因果掩码在一次前向中验证所有路径，命中即一次输出多个 token。</span></figcaption>
 </figure><div class="paper spec"><span class="pid">MEDUSA</span><div><div class="ptitle">Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads</div><div class="pinfo">Cai et al. · CMU · ICML 2024 · 多头 + 候选树 + Tree Attention，工程上易插拔</div></div><a href="https://arxiv.org/abs/2401.10774">arXiv:2401.10774</a></div><h4>EAGLE：在“特征层”而不是 token 层起草</h4><p>Medusa 直接猜 token，EAGLE 更进一步：<strong>把目标模型中层的隐藏特征与已采样 token 一起喂给一个轻量自回归头，在“特征序列”上做预测</strong>，天然贴合目标模型的内部表示，接受率显著更高。三代演进：</p><ul>
 <li><strong>EAGLE（ICML 2024）</strong>：特征 + token 起草，静态草稿树，约 3× 量级；</li>
 <li><strong>EAGLE-2（EMNLP 2024）</strong>：<strong>动态草稿树</strong>——根据上下文置信度自适应分配候选，在“容易错”的地方布更多分支；</li>
@@ -1430,7 +1808,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#697a92" font-size="11.5" x="320" y="180">训练：MTP 作为多任务损失，同时提升主模型；推理：链式起草</text>
 </g>
 </svg>
-<figcaption><b>图 23</b><span>MTP：主模型与 MTP 模块串联，沿“隐藏状态 + token”链式预测多个未来 token；训练即多任务学习、推理即候选链。相比外挂草稿，它与模型一体化、无额外模型维护成本（DeepSeek-V3/R1）。</span></figcaption>
+<figcaption><b>图 31</b><span>MTP：主模型与 MTP 模块串联，沿“隐藏状态 + token”链式预测多个未来 token；训练即多任务学习、推理即候选链。相比外挂草稿，它与模型一体化、无额外模型维护成本（DeepSeek-V3/R1）。</span></figcaption>
 </figure><div class="paper spec"><span class="pid">DSv3</span><div><div class="ptitle">DeepSeek-V3 Technical Report</div><div class="pinfo">DeepSeek-AI · 2024 · MTP 多 token 预测模块的设计、训练损失与推理用法（另含 61 层 MLA、FP8 训练、MoE 细节）</div></div><a href="https://arxiv.org/abs/2412.19437">arXiv:2412.19437</a></div><h4>Lookahead Decoding：零训练、零小模型的 Jacobi 并行</h4><p>Lookahead Decoding 完全不引入额外模型、也不做任何微调，而是用 <strong>Jacobi 迭代</strong>把“串行解码”变成<strong>对一个 2D 窗口的并行猜测</strong>：每条“猜测分支”在窗口内同时尝试多个未来位置（等价于并行 Jacobi 解码），每条“N-gram 分支”从历史维护的 <strong>n-gram 池</strong>里取候选序列验证、命中后回填池子。一次前向可能确认多个 token，未命中也无损退回。</p><figure class="fig">
 <svg aria-label="Lookahead decoding 二维窗口与 n-gram 池" role="img" viewbox="0 0 900 260">
 <defs><marker id="ar8" markerheight="10" markerwidth="10" orient="auto" refx="8" refy="5"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"></path></marker></defs>
@@ -1463,7 +1841,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#697a92" font-size="11" text-anchor="middle" x="170" y="240">Guess 分支 Jacobi 并行；无需训练 / 小模型</text>
 </g>
 </svg>
-<figcaption><b>图 24</b><span>Lookahead：2D 窗口内 Guess 分支做 Jacobi 并行解码、N-gram 分支验证历史 n-gram 并回填；绿色为一次确认的 token。开箱即用、完全无损，适合不能改模型的部署场景。</span></figcaption>
+<figcaption><b>图 32</b><span>Lookahead：2D 窗口内 Guess 分支做 Jacobi 并行解码、N-gram 分支验证历史 n-gram 并回填；绿色为一次确认的 token。开箱即用、完全无损，适合不能改模型的部署场景。</span></figcaption>
 </figure><div class="paper spec"><span class="pid">LOOKAHEAD</span><div><div class="ptitle">Break the Sequential Dependency of LLM Inference Using Lookahead Decoding</div><div class="pinfo">Fu et al. · Together AI · ICML 2024 · Jacobi 迭代 + n-gram 池，零训练并行解码</div></div><a href="https://arxiv.org/abs/2402.02057">arXiv:2402.02057</a></div><p>同属零训练路线的还有 <strong>REST（Retrieval-Based Speculative Decoding）</strong>：草稿不从模型自身产生，而是从外部语料库<strong>检索</strong>与当前上下文匹配的 n-gram 片段作为候选，特别适合代码补全、RAG 等输出大量复用已有文本的场景。</p><p>同族还有一个更轻的分支 <strong>Prompt Lookup Decoding</strong>：草稿不去外部语料库检索，而是直接在<strong>当前请求的 prompt 里</strong>匹配 n-gram——代码编辑（输出大量重复上下文）、RAG 摘要（答案抄自检索文档）场景命中率极高，实现只需几十行、几乎零额外开销，常作为投机家族里“先试这个”的起步项。</p><h4>家族全对比与选型</h4><div class="tbl-scroll">
 <table>
 <colgroup><col style="width:14%"/><col style="width:20%"/><col style="width:16%"/><col style="width:18%"/><col style="width:16%"/><col style="width:16%"/></colgroup>
@@ -1505,11 +1883,11 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <text fill="#697a92" font-size="11.5" text-anchor="middle" x="450" y="278">高并发服务端：投机与 PD 分离、Continuous Batching 可叠加使用</text>
 </g>
 </svg>
-<figcaption><b>图 25</b><span>选型决策：先看“能不能改模型”，再看训练预算与可加结构；不能改就走 Lookahead / 经典投机，能改则按改动量选自投机、Medusa/EAGLE 或原生 MTP。</span></figcaption>
+<figcaption><b>图 33</b><span>选型决策：先看“能不能改模型”，再看训练预算与可加结构；不能改就走 Lookahead / 经典投机，能改则按改动量选自投机、Medusa/EAGLE 或原生 MTP。</span></figcaption>
 </figure></section>
-<!-- ================= 第 5 章 · Detokenizer ================= -->
-<section class="wrap" id="ch5">
-<div class="sec-head"><span class="sec-no">05</span><h2>Detokenizer：把 ID 拼回文字，送到用户眼前</h2><span class="sub">DETOKENIZE &amp; STREAM</span></div>
+<!-- ================= 第 6 章 · Detokenizer ================= -->
+<section class="wrap" id="ch6">
+<div class="sec-head"><span class="sec-no">06</span><h2>Detokenizer：把 ID 拼回文字，送到用户眼前</h2><span class="sub">DETOKENIZE &amp; STREAM</span></div>
 <p>采样产出的 ID 是机器内部表示，用户要看到的是文字。Detokenizer 是 Tokenizer 的逆过程：<strong>按 ID 查表得到 token 字符串，再按 BPE 的合并规则把它们拼接还原</strong>。这一站计算量极小（仍是 CPU 侧的字符串操作），但有几个直接影响体验的工程细节。</p>
 <figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="378" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="508" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><circle cx="696" cy="40" fill="#16233a" r="3.5"></circle><rect fill="#fff" height="48" rx="10" stroke="#16233a" stroke-width="1.7" width="116" x="638" y="44"></rect><text fill="#16233a" font-size="11.8" font-weight="800" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#7a8699" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">当前环节 · Detokenizer（ID 拼回文本）</text></g></svg></figure>
 <figure class="fig">
@@ -1555,7 +1933,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </g>
 </g>
 </svg>
-<figcaption><b>图 26</b><span>Detokenizer：ID 逆查表得到子词字符串，按 BPE 规则拼接（Ġ 还原为空格、Ċ 还原为换行），还原出的文本以 chunk 流式推送；停止符不输出，多语言经字节回退正确还原。</span></figcaption>
+<figcaption><b>图 34</b><span>Detokenizer：ID 逆查表得到子词字符串，按 BPE 规则拼接（Ġ 还原为空格、Ċ 还原为换行），还原出的文本以 chunk 流式推送；停止符不输出，多语言经字节回退正确还原。</span></figcaption>
 </figure>
 <h3>三个工程细节</h3>
 <ul>
@@ -1563,383 +1941,9 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <li><strong>特殊 token 过滤</strong>：停止符、填充符、对话模板标记（<code>&lt;|im_end|&gt;</code> 等）只用于控制流程，绝不能出现在最终文本里。</li>
 <li><strong>与投机解码对齐</strong>：一批被接受的 token 应<strong>一次性 detokenize</strong>，避免逐个推送造成的抖动；未被接受的候选不进入这一步。</li>
 </ul>
-<p>还有两类“输出形态”的细节：一是<strong>工具调用 / Function Calling</strong>——其参数本质是一段受约束的 JSON（4.2），流式解析要按增量 JSON 的方式边收边校验，而不是攒到完整再 parse，否则工具执行要等到输出结束才能启动；二是<strong>内容安全审核</strong>通常挂在这一环节——流式场景采用“缓冲若干 token 送审、命中风险立即截断”的策略，审核窗口会额外增加首 chunk 延迟，需要在体验与合规之间取平衡。</p>
+<p>还有两类“输出形态”的细节：一是<strong>工具调用 / Function Calling</strong>——其参数本质是一段受约束的 JSON（5.2），流式解析要按增量 JSON 的方式边收边校验，而不是攒到完整再 parse，否则工具执行要等到输出结束才能启动；二是<strong>内容安全审核</strong>通常挂在这一环节——流式场景采用“缓冲若干 token 送审、命中风险立即截断”的策略，审核窗口会额外增加首 chunk 延迟，需要在体验与合规之间取平衡。</p>
 <div class="callout c-teal"><span class="ct">多模态输出</span><p>多模态模型的输出可以是文本、图像、音频或工具调用：文本走上述 Detokenizer；图像/音频由对应的扩散/声码器等生成模块产出，再与文本片段按时间线/布局混合呈现。无论输出形态如何，“模型产出内部表示 → 解码为用户可感知内容 → 流式交付”的结构是一致的。</p></div>
 </section>
-<!-- ================= 第 6 章 · 并发请求 ================= -->
-<section class="wrap" id="ch6"><div class="sec-head"><span class="sec-no">06</span><h2>并发请求：批处理、前缀复用与 PD 分离</h2><span class="sub">SERVING &amp; SCHEDULING</span></div><p>前面五章跟踪了一个请求从输入到输出的完整旅程；服务端真正面对的是成千上万个请求同时处在流水线的不同环节：有的在 Prefill、有的在 Decode、有的刚结束。这一层横切所有环节，核心命题是调度粒度、显存组织与架构解耦，目标是把 GPU 吞吐打满。本章先看静态做法的痛点与天花板（6.1），再讲机内调度手段（6.2），最后是架构级的 PD 分离（6.3）。</p><figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="118" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="378" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="508" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><rect fill="none" height="60" rx="10" stroke="#16233a" stroke-dasharray="6 4" stroke-width="1.6" width="652" x="110" y="38"></rect><rect fill="#16233a" height="20" rx="10" width="240" x="330" y="24"></rect><text fill="#fff" font-size="11" font-weight="700" text-anchor="middle" x="450" y="38">并发请求 · 覆盖流水线每一个环节</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">Continuous Batching · PagedAttention · Chunked Prefill · RadixAttention · PD 分离</text></g></svg></figure><figure class="fig fig-wide">
-<svg aria-label="06 并发请求结构地图" role="img" viewbox="0 0 960 522">
-<defs><clippath id="nclip4"><rect height="502" rx="14" width="940" x="10" y="10"></rect></clippath>
-<marker id="m4a" markerheight="9" markerwidth="9" orient="auto" refx="7" refy="4.5"><path d="M0,0 L9,4.5 L0,9 Z" fill="#33415c"></path></marker></defs>
-<g font-family="inherit">
-<rect fill="#f7f9fc" height="502" rx="14" stroke="#33415c" stroke-width="2" width="940" x="10" y="10"></rect>
-<g clip-path="url(#nclip4)"><rect fill="#33415c" height="46" width="940" x="10" y="10"></rect></g>
-<text fill="#fff" font-size="15" font-weight="800" x="30" y="39">06 并发请求 · 多请求同时处在流水线的不同环节</text>
-<!-- scheduler row -->
-<rect fill="#eef2f7" height="46" rx="10" stroke="#94a3b8" stroke-dasharray="5 4" width="180" x="26" y="66"></rect>
-<text fill="#16233a" font-size="12" font-weight="700" text-anchor="middle" x="116" y="94">多请求持续到达</text>
-<line marker-end="url(#m4a)" stroke="#33415c" stroke-width="2" x1="212" x2="276" y1="89" y2="89"></line>
-<rect fill="#16233a" height="46" rx="10" width="280" x="282" y="66"></rect>
-<text fill="#fff" font-size="12.5" font-weight="800" text-anchor="middle" x="422" y="94">全局调度器（每 iteration 重排）</text>
-<line marker-end="url(#m4a)" stroke="#33415c" stroke-width="2" x1="568" x2="632" y1="89" y2="89"></line>
-<rect fill="#eef4f3" height="46" rx="10" stroke="#7fc4bd" width="180" x="638" y="66"></rect>
-<text fill="#0f766e" font-size="12" font-weight="700" text-anchor="middle" x="728" y="94">GPU 资源池</text>
-<!-- 6.1 -->
-<rect fill="#eef2f7" height="104" rx="10" stroke="#94a3b8" width="908" x="26" y="130"></rect>
-<rect fill="#23456f" height="104" rx="10" width="150" x="26" y="130"></rect>
-<text fill="#fff" font-size="14" font-weight="800" text-anchor="middle" x="101" y="176">6.1 背景</text>
-<text fill="#cfe0f2" font-size="10.5" text-anchor="middle" x="101" y="200">痛点·天花板·指标</text>
-<g font-size="11">
-<rect fill="#fff" height="62" rx="8" stroke="#c9d3df" width="226" x="190" y="150"></rect>
-<text fill="#16233a" font-weight="700" x="204" y="172">Static Batching 三痛点</text>
-<text fill="#697a92" x="204" y="192">木桶效应 · 无法动态加入</text>
-<text fill="#697a92" x="204" y="210">按最大长度预留→碎片</text>
-<rect fill="#fff" height="62" rx="8" stroke="#c9d3df" width="226" x="430" y="150"></rect>
-<text fill="#16233a" font-weight="700" x="444" y="172">带宽反推 TPS 天花板</text>
-<text fill="#697a92" x="444" y="192">7B/A10 ≈ 43 TPS（理论）</text>
-<text fill="#697a92" x="444" y="210">实测 ~30，差距即优化空间</text>
-<rect fill="#fff" height="62" rx="8" stroke="#c9d3df" width="252" x="670" y="150"></rect>
-<text fill="#16233a" font-weight="700" x="684" y="172">服务指标体系</text>
-<text fill="#697a92" x="684" y="192">TTFT · ITL · TPS</text>
-<text fill="#697a92" x="684" y="210">Goodput（SLO 达标吞吐）</text>
-</g>
-<!-- 6.2 -->
-<rect fill="#eef4f3" height="118" rx="10" stroke="#7fc4bd" width="908" x="26" y="246"></rect>
-<rect fill="#0d9488" height="118" rx="10" width="150" x="26" y="246"></rect>
-<text fill="#fff" font-size="13.5" font-weight="800" text-anchor="middle" x="101" y="292">6.2 机内优化</text>
-<text fill="#d4ece9" font-size="10.5" text-anchor="middle" x="101" y="316">调度器统一驱动</text>
-<g text-anchor="middle">
-<rect fill="#fff" height="76" rx="9" stroke="#bfe0db" width="226" x="190" y="266"></rect>
-<text fill="#0f766e" font-size="12" font-weight="800" x="303" y="292">Continuous Batching</text>
-<text fill="#697a92" font-size="10.5" x="303" y="314">iteration 级进出</text>
-<text fill="#697a92" font-size="10.5" x="303" y="332">GPU 持续满载（ORCA）</text>
-<rect fill="#fff" height="76" rx="9" stroke="#bfe0db" width="226" x="430" y="266"></rect>
-<text fill="#0f766e" font-size="12" font-weight="800" x="543" y="292">Chunked Prefill</text>
-<text fill="#697a92" font-size="10.5" x="543" y="314">长 prompt 切块</text>
-<text fill="#697a92" font-size="10.5" x="543" y="332">与 Decode 交错护 ITL</text>
-<rect fill="#fff" height="76" rx="9" stroke="#bfe0db" width="252" x="670" y="266"></rect>
-<text fill="#0f766e" font-size="12" font-weight="800" x="796" y="292">RadixAttention</text>
-<text fill="#697a92" font-size="10.5" x="796" y="314">基数树 + 最长前缀匹配</text>
-<text fill="#697a92" font-size="10.5" x="796" y="332">公共前缀只算一次</text>
-</g>
-<!-- 6.3 -->
-<rect fill="#f6f0e6" height="96" rx="10" stroke="#d9b878" width="908" x="26" y="376"></rect>
-<rect fill="#b9832b" height="96" rx="10" width="150" x="26" y="376"></rect>
-<text fill="#fff" font-size="13.5" font-weight="800" text-anchor="middle" x="101" y="414">6.3 架构解耦</text>
-<text fill="#f6ead2" font-size="10.5" text-anchor="middle" x="101" y="438">PD 分离</text>
-<text fill="#16233a" font-size="11.5" font-weight="700" x="190" y="406">Prefill 池 → KV 高速迁移（NVLink / RDMA / NIXL）→ Decode 池</text>
-<text fill="#697a92" font-size="11" x="190" y="430">两池硬件、卡数、并行策略独立扩缩容；P/D 吞吐差约 140 倍，混部双输</text>
-<text fill="#697a92" font-size="11" x="190" y="454">DistServe · Mooncake · Splitwise · NVIDIA Dynamo</text>
-<rect fill="#e9edf3" height="30" rx="8" width="908" x="26" y="482"></rect>
-<text fill="#33415c" font-size="11" font-weight="700" x="42" y="502">脉络：机内手段把单 GPU 打满；P/D 矛盾无法调和时走向架构解耦——目标：Goodput 最大化、每 token 成本最小化</text>
-</g>
-</svg>
-<figcaption><b>图 27</b><span><b>06 章结构地图</b>：6.1 背景（Static Batching 痛点、TPS 天花板、指标体系）；6.2 机内优化（Continuous Batching / Chunked Prefill / RadixAttention）；6.3 架构解耦（PD 分离）。</span></figcaption>
-</figure><h3>背景：并发处理时 GPU 算力的浪费</h3><p>最简单的批处理是凑齐一批请求、同时开始、等整批都生成完再返回、再放下一批。它有三个致命问题：</p><ul>
-<li><strong>木桶效应</strong>：整批被最长的请求拖住，短请求早早算完也只能空等；</li>
-<li><strong>无法动态加入</strong>：新请求必须等上一批全部结束，期间 GPU 槽位空闲；</li>
-<li><strong>显存按最大长度预留</strong>：不管实际生成多少都按上限占位，内部碎片严重、且无法在请求间共享（3.2 的 PagedAttention 正是为解决这个问题）</li>
-</ul><figure class="fig">
-<svg aria-label="静态与连续批处理时序对比" role="img" viewbox="0 0 900 300">
-<g font-family="inherit">
-<text fill="#16233a" font-size="13.5" font-weight="700" x="40" y="30">Static Batching</text>
-<text fill="#16233a" font-size="13.5" font-weight="700" x="40" y="150">Continuous</text>
-<text fill="#697a92" font-size="11" x="40" y="166">iteration 级调度</text>
-<!-- static rows, cells start x=140 step30 w28 h22 -->
-<g>
-<!-- r1 work5 -->
-<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="40"></rect><rect height="22" rx="3" width="28" x="170" y="40"></rect><rect height="22" rx="3" width="28" x="200" y="40"></rect><rect height="22" rx="3" width="28" x="230" y="40"></rect><rect height="22" rx="3" width="28" x="260" y="40"></rect></g>
-<g fill="#eef1f5"><rect height="22" rx="3" width="28" x="290" y="40"></rect><rect height="22" rx="3" width="28" x="320" y="40"></rect><rect height="22" rx="3" width="28" x="350" y="40"></rect></g>
-<!-- r2 work7 -->
-<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="66"></rect><rect height="22" rx="3" width="28" x="170" y="66"></rect><rect height="22" rx="3" width="28" x="200" y="66"></rect><rect height="22" rx="3" width="28" x="230" y="66"></rect><rect height="22" rx="3" width="28" x="260" y="66"></rect><rect height="22" rx="3" width="28" x="290" y="66"></rect><rect height="22" rx="3" width="28" x="320" y="66"></rect></g>
-<rect fill="#eef1f5" height="22" rx="3" width="28" x="350" y="66"></rect>
-<!-- r3 work4 -->
-<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="92"></rect><rect height="22" rx="3" width="28" x="170" y="92"></rect><rect height="22" rx="3" width="28" x="200" y="92"></rect><rect height="22" rx="3" width="28" x="230" y="92"></rect></g>
-<g fill="#eef1f5"><rect height="22" rx="3" width="28" x="260" y="92"></rect><rect height="22" rx="3" width="28" x="290" y="92"></rect><rect height="22" rx="3" width="28" x="320" y="92"></rect><rect height="22" rx="3" width="28" x="350" y="92"></rect></g>
-<!-- r4 work8 -->
-<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="118"></rect><rect height="22" rx="3" width="28" x="170" y="118"></rect><rect height="22" rx="3" width="28" x="200" y="118"></rect><rect height="22" rx="3" width="28" x="230" y="118"></rect><rect height="22" rx="3" width="28" x="260" y="118"></rect><rect height="22" rx="3" width="28" x="290" y="118"></rect><rect height="22" rx="3" width="28" x="320" y="118"></rect><rect height="22" rx="3" width="28" x="350" y="118"></rect></g>
-<line stroke="#e8590c" stroke-width="2" x1="386" x2="386" y1="34" y2="146"></line>
-<text fill="#e8590c" font-size="11" font-weight="700" x="394" y="60">最慢者决定整批</text>
-<text fill="#e8590c" font-size="11" x="394" y="76">空槽无法复用</text>
-</g>
-<line stroke="#d7dee8" x1="40" x2="880" y1="158" y2="158"></line>
-<!-- continuous rows y=180,206,232,258 -->
-<g>
-<!-- r1: A 0..4 navy, E 5..7 orange -->
-<g fill="#23456f"><rect height="22" rx="3" width="28" x="140" y="180"></rect><rect height="22" rx="3" width="28" x="170" y="180"></rect><rect height="22" rx="3" width="28" x="200" y="180"></rect><rect height="22" rx="3" width="28" x="230" y="180"></rect><rect height="22" rx="3" width="28" x="260" y="180"></rect></g>
-<g fill="#e8590c"><rect height="22" rx="3" width="28" x="290" y="180"></rect><rect height="22" rx="3" width="28" x="320" y="180"></rect><rect height="22" rx="3" width="28" x="350" y="180"></rect></g>
-<!-- r2: B 0..6 blue, F 7 purple -->
-<g fill="#2f6fb0"><rect height="22" rx="3" width="28" x="140" y="206"></rect><rect height="22" rx="3" width="28" x="170" y="206"></rect><rect height="22" rx="3" width="28" x="200" y="206"></rect><rect height="22" rx="3" width="28" x="230" y="206"></rect><rect height="22" rx="3" width="28" x="260" y="206"></rect><rect height="22" rx="3" width="28" x="290" y="206"></rect><rect height="22" rx="3" width="28" x="320" y="206"></rect></g>
-<rect fill="#6d5bd0" height="22" rx="3" width="28" x="350" y="206"></rect>
-<!-- r3: C starts1 teal 1..5, G 6..7 -->
-<rect fill="#eef1f5" height="22" rx="3" width="28" x="140" y="232"></rect>
-<g fill="#0d9488"><rect height="22" rx="3" width="28" x="170" y="232"></rect><rect height="22" rx="3" width="28" x="200" y="232"></rect><rect height="22" rx="3" width="28" x="230" y="232"></rect><rect height="22" rx="3" width="28" x="260" y="232"></rect><rect height="22" rx="3" width="28" x="290" y="232"></rect></g>
-<g fill="#3f9bb5"><rect height="22" rx="3" width="28" x="320" y="232"></rect><rect height="22" rx="3" width="28" x="350" y="232"></rect></g>
-<!-- r4: D 0..2 gold, H 3..6 #c2693a, I 7 #4e8c7a -->
-<g fill="#b9832b"><rect height="22" rx="3" width="28" x="140" y="258"></rect><rect height="22" rx="3" width="28" x="170" y="258"></rect><rect height="22" rx="3" width="28" x="200" y="258"></rect></g>
-<g fill="#c2693a"><rect height="22" rx="3" width="28" x="230" y="258"></rect><rect height="22" rx="3" width="28" x="260" y="258"></rect><rect height="22" rx="3" width="28" x="290" y="258"></rect><rect height="22" rx="3" width="28" x="320" y="258"></rect></g>
-<rect fill="#4e8c7a" height="22" rx="3" width="28" x="350" y="258"></rect>
-</g>
-<text fill="#16233a" font-size="11.5" x="430" y="196">不同颜色 = 不同请求；谁完成就立刻在该槽位放入新请求</text>
-<text fill="#0d9488" font-size="11.5" font-weight="700" x="430" y="246">每个 iteration 重新组 batch，GPU 几乎不空闲</text>
-<text fill="#697a92" font-size="11" x="430" y="276">吞吐显著高于静态批处理（业界主流默认）</text>
-</g>
-</svg>
-<figcaption><b>图 28</b><span>Static Batching（上）整批同进同出，短请求空等最慢者、槽位浪费；Continuous Batching（下）把调度粒度从“整批”细化到<strong>每个 iteration（一次前向）</strong>，请求完成后立即在空槽插入新请求，GPU 持续满载。</span></figcaption>
-</figure><p>浪费之外，再算清单卡的理论天花板，才知道优化空间有多大。</p><style>
-    .flow4{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:18px 0}
-    .fstep{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;position:relative}
-    .fstep .k{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700}
-    .fstep .v{font-size:14px;font-weight:700;margin-top:4px;color:var(--ink)}
-    .fstep small{font-size:11.5px;color:var(--muted)}
-    .farrow{align-self:center;color:var(--muted);font-size:18px}
-  </style><div class="flow4">
-<div class="fstep"><div class="k">STEP 1 · 权重</div><div class="v">7B × 2B ≈ 14 GiB</div><small>FP16/BF16 常驻显存，A10 24GB 可容纳</small></div>
-<span class="farrow">→</span>
-<div class="fstep"><div class="k">STEP 2 · 带宽</div><div class="v">600 GB/s</div><small>A10 GDDR6 峰值（H100 为 3.35TB/s）</small></div>
-<span class="farrow">→</span>
-<div class="fstep"><div class="k">STEP 3 · 读一遍</div><div class="v">14 / 600 ≈ 23 ms</div><small>单 token 最短访存时间</small></div>
-<span class="farrow">→</span>
-<div class="fstep"><div class="k">STEP 4 · 理论上限</div><div class="v">1 / 23ms ≈ 43 TPS</div><small>batch=1、纯读权重</small></div>
-</div><div class="callout c-gold"><span class="ct">理论 vs 现实</span><p>A10 上 7B 单请求实测约 <strong>30 TPS 量级</strong>（随上下文变长继续下降）——因为还要读取随序列增长的 KV Cache、kernel launch / 调度开销、带宽利用率不可能 100%；同口径 H100 理论天花板约 238 TPS。<strong>理论值的意义是给出“天花板”</strong>：当实测离天花板很远时，说明还有调度或访存可挖；batch 拼大后吞吐可逼近“带宽×算术强度”的整体上限。</p></div><small class="note">MoE 口径：上面按“每步读全部权重”估算；MoE 模型每步只读<strong>激活专家</strong>的权重，如 Qwen3-30B-A3B 单 token 约读 3.3B × 2B ≈ 6.6 GiB，A10 上的理论天花板相应抬到 ~90 TPS 量级——代价是 30.5B 总参数仍需完整装进显存（单机放不下就要多卡并行分摊，见 6.3）。</small><p>谈优化前还要先定义「好」：下面这套指标贯穿本章与第 3 章。</p><div class="tbl-scroll">
-<table>
-<colgroup><col style="width:15%"/><col style="width:55%"/><col style="width:30%"/></colgroup>
-<thead><tr><th>指标</th><th>含义</th><th>主要相关阶段/手段</th></tr></thead>
-<tbody>
-<tr><td>TTFT</td><td>Time To First Token，发出请求到看到第一个字的时间，最影响“快不快”的第一印象</td><td>Prefill；FlashAttn / PD 分离</td></tr>
-<tr><td>ITL</td><td>Inter-Token Latency，相邻 token 间隔，决定流式输出是否“卡顿”</td><td>Decode；Chunked Prefill / 减 KV</td></tr>
-<tr><td>TPOT</td><td>Time Per Output Token，每输出 token 平均耗时（含首字口径差异）</td><td>Decode</td></tr>
-<tr><td>TPS / 吞吐</td><td>系统每秒生成 token 数（聚合所有请求），决定单卡能扛多少用户</td><td>Batching / 分页 / PD 分离</td></tr>
-<tr><td>TBT</td><td>Time Between Tokens，更严格的逐 token 间隔 SLO（如 P99 &lt; 某阈值）</td><td>调度 / Chunked Prefill</td></tr>
-<tr><td>TTLT</td><td>Time To Last Token，完整响应时延（非流式场景）</td><td>全链路</td></tr>
-<tr><td>Goodput</td><td>在 SLO（TTFT/ITL）达标前提下的有效吞吐，比裸吞吐更有意义</td><td>PD 分离的核心优化目标</td></tr>
-</tbody>
-</table>
-</div><div class="tbl-scroll">
-<table>
-<colgroup><col style="width:30%"/><col style="width:22%"/><col style="width:48%"/></colgroup>
-<thead><tr><th>现象 / 问题</th><th>看哪个指标</th><th>对应手段</th></tr></thead>
-<tbody>
-<tr><td>第一个字等太久</td><td>TTFT ↑</td><td>FlashAttention、Prefill 并行、PD 分离、前缀缓存</td></tr>
-<tr><td>打字机一卡一卡</td><td>ITL P99 尖刺</td><td>Chunked Prefill、Continuous Batching、压缩 KV</td></tr>
-<tr><td>单卡扛不住并发</td><td>TPS / Goodput ↓</td><td>Continuous Batching、PagedAttention、PD 分离</td></tr>
-<tr><td>长上下文 OOM</td><td>显存占用</td><td>MLA、KV 量化、KV 驱逐、分页</td></tr>
-<tr><td>JSON / 代码格式非法</td><td>格式合规率</td><td>约束解码（Outlines / XGrammar / GBNF）</td></tr>
-</tbody>
-</table>
-</div><h3>机内优化：动态拼批、切块调度与前缀复用</h3><p>6.1 的痛点对应三类机内手段：调度粒度细化到 iteration（Continuous Batching）、长 Prefill 切块交错（Chunked Prefill）、公共前缀缓存复用（RadixAttention）；显存摆放问题（PagedAttention）已在 3.2 讲过。</p><p><strong>Continuous Batching</strong>（ORCA 首创）把调度单位从「整批」细化到每个 iteration（一次前向）：完成的请求立刻离开、空槽插入新请求，GPU 持续满载（时序对比见上图）。</p><div class="paper sys"><span class="pid">ORCA</span><div><div class="ptitle">Orca: A Distributed Serving System for Transformer-Based Generative Models</div><div class="pinfo">Yu et al. · OSDI 2022 · 首次提出 iteration-level 调度与 selective batching，是连续批处理的源头</div></div><a href="https://www.usenix.org/conference/osdi22/presentation/yu">USENIX OSDI'22</a></div><p>Continuous Batching 还有一个高负载下绕不开的问题：<strong>KV Cache 不够装时怎么办</strong>。当并发请求的 KV 总量逼近显存上限，调度器必须<strong>抢占（Preemption）</strong>一部分请求腾地方——vLLM 提供两种策略：<strong>重计算（Recompute）</strong>，丢弃被抢占请求的全部 KV、轮到时重跑 Prefill，实现简单但时延开销大；<strong>换出（Swap）</strong>，把 KV 临时搬到 CPU 内存、轮到时再搬回，省算力但吃 PCIe 带宽。工程上通常配合优先级队列与最大并发上限，把抢占压成偶发事件——<strong>频繁抢占本身就是“该扩容或上 PD 分离（6.3）”的信号</strong>。</p><p>Prefill 是 Compute-Bound，一个几万 token 的长请求会<strong>连续占用 GPU 多个 iteration</strong>，期间正在 Decode 的请求得不到调度，ITL 出现尖刺、用户明显卡顿。<strong>Chunked Prefill 把长 Prefill 切成固定小块（chunk），与 Decode 请求在 iteration 级别交错执行</strong>，必要时还把多个 prefill 块拼进同一 batch，兼顾首 token 时延与吞吐。<strong>chunk 大小是关键参数</strong>：切得太小，Prefill 效率下降、调度开销上升；切得太大，ITL 尖刺依旧。vLLM 默认 chunk 约 2048 token（长 prompt 场景可调大到 4096–8192），正确姿势是固定业务流量、按 TTFT 与 ITL P99 实测调参。</p><figure class="fig">
-<svg aria-label="Chunked Prefill 交错调度" role="img" viewbox="0 0 900 220">
-<g font-family="inherit">
-<text fill="#16233a" font-size="13" font-weight="700" x="40" y="40">无 Chunked：长 Prefill 独占</text>
-<rect fill="#e8590c" height="34" rx="6" width="300" x="130" y="52"></rect><text fill="#fff" font-size="12.5" font-weight="700" text-anchor="middle" x="280" y="74">Prefill（连续数百 iteration）</text>
-<g fill="#0d9488"><rect height="34" rx="5" width="30" x="436" y="52"></rect><rect height="34" rx="5" width="30" x="470" y="52"></rect></g>
-<text fill="#d7541a" font-size="11.5" x="130" y="116">Decode 请求全程排队 → ITL 尖刺、卡顿</text>
-<line stroke="#d7dee8" x1="40" x2="880" y1="134" y2="134"></line>
-<text fill="#16233a" font-size="13" font-weight="700" x="40" y="160">Chunked：切块与 Decode 交错</text>
-<g>
-<rect fill="#e8590c" height="32" rx="6" width="66" x="130" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="202" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="238" y="170"></rect>
-<rect fill="#e8590c" height="32" rx="6" width="66" x="274" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="346" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="382" y="170"></rect>
-<rect fill="#e8590c" height="32" rx="6" width="66" x="418" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="490" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="526" y="170"></rect>
-<rect fill="#e8590c" height="32" rx="6" width="66" x="562" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="634" y="170"></rect><rect fill="#0d9488" height="32" rx="5" width="30" x="670" y="170"></rect>
-</g>
-<text fill="#0d9488" font-size="11.5" font-weight="700" x="710" y="190">P=Prefill块　D=Decode</text>
-<text fill="#697a92" font-size="11" x="710" y="206">ITL 保持平滑</text>
-</g>
-</svg>
-<figcaption><b>图 29</b><span>Chunked Prefill：长 Prefill 被切成 chunk（橙）与 Decode（青）在 iteration 级交错，避免长请求阻塞解码；现代推理引擎（vLLM / SGLang / TensorRT-LLM）均已默认开启。</span></figcaption>
-</figure><div class="grid2">
-<div class="paper sys"><span class="pid">SARATHI</span><div><div class="ptitle">Sarathi: Efficient LLM Inference by Pipelining Token Computation (Chunked Prefill)</div><div class="pinfo">Agrawal et al. · 2023 · 首次提出 chunked prefill + decode 流水</div></div><a href="https://arxiv.org/abs/2308.16369">arXiv:2308.16369</a></div>
-<div class="paper sys"><span class="pid">SARATHI-SERVE</span><div><div class="ptitle">Sarathi-Serve: Chase Away Prefix Queue Under Chunked Prefills</div><div class="pinfo">Agrawal et al. · OSDI 2024 · Stall-free 调度，延迟与吞吐协同</div></div><a href="https://arxiv.org/abs/2403.02310">arXiv:2403.02310</a></div>
-</div><p>多轮对话、Agent、共享系统提示、few-shot 场景里，大量请求共享相同前缀。SGLang 提出 <strong>RadixAttention</strong>：用一棵 <strong>基数树（Radix Tree）</strong>维护所有处理过的 prompt，新请求自动做<strong>最长前缀匹配</strong>，命中的 KV 直接复用、未命中部分才算；缓存紧张时按 <strong>LRU 驱逐</strong>最少使用的叶子。它与 PagedAttention 是搭档——分页管“块怎么放”，基数树管“哪些前缀能复用”。</p><figure class="fig">
-<svg aria-label="RadixAttention 前缀树" role="img" viewbox="0 0 900 300">
-<g font-family="inherit" text-anchor="middle">
-<!-- edges -->
-<g fill="none" stroke="#8fa3b8" stroke-width="2">
-<line x1="450" x2="450" y1="68" y2="92"></line><line x1="450" x2="450" y1="126" y2="150"></line><line x1="450" x2="450" y1="184" y2="208"></line>
-<path d="M450,242 L450,254 L180,254 L180,266"></path><path d="M450,254 L450,266"></path><path d="M450,242 L450,254 L720,254 L720,266"></path>
-</g>
-<!-- prefix cached nodes -->
-<g fill="#0d9488">
-<rect height="34" rx="8" width="90" x="405" y="34"></rect><rect height="34" rx="8" width="90" x="405" y="92"></rect>
-<rect height="34" rx="8" width="110" x="395" y="150"></rect><rect height="34" rx="8" width="80" x="410" y="208"></rect>
-</g>
-<g fill="#fff" font-size="13" font-weight="700">
-<text x="450" y="56">ROOT</text><text x="450" y="114">The</text><text x="450" y="172">capital</text><text x="450" y="230">of</text>
-</g>
-<!-- branch nodes -->
-<rect fill="#fff" height="30" rx="8" stroke="#94a3b8" width="150" x="105" y="266"></rect>
-<rect fill="#fff" height="30" rx="8" stroke="#94a3b8" width="150" x="375" y="266"></rect>
-<rect fill="#fff" height="30" rx="8" stroke="#94a3b8" width="150" x="645" y="266"></rect>
-<g fill="#16233a" font-size="12"><text x="180" y="286">Britain → London</text><text x="450" y="286">France → Paris</text><text x="720" y="286">China → Beijing</text></g>
-<text fill="#0d9488" font-size="11.5" font-weight="700" text-anchor="start" x="60" y="52">青色节点：公共前缀</text>
-<text fill="#0d9488" font-size="11" text-anchor="start" x="60" y="70">一次计算、多请求复用</text>
-<text fill="#697a92" font-size="11" text-anchor="start" x="60" y="278">叶子可 LRU 驱逐</text>
-</g>
-</svg>
-<figcaption><b>图 30</b><span>RadixAttention 基数树：“The capital of”作为公共前缀只算一次并被三个请求共享；分叉部分各自计算。多轮对话 / Agent / 公共 system prompt 场景命中率极高。</span></figcaption>
-</figure><div class="paper sys"><span class="pid">SGLANG</span><div><div class="ptitle">SGLang: Efficient Execution of Structured Language Model Programs</div><div class="pinfo">Zheng et al. · NeurIPS 2024/2025 · RadixAttention 自动前缀复用 + 结构化生成运行时</div></div><a href="https://arxiv.org/abs/2312.07104">arXiv:2312.07104</a></div><p>一个工程提醒：RadixAttention 的收益完全取决于<strong>前缀命中率</strong>——多轮对话、共享 system prompt、Agent 场景命中率常超过 50%；但如果业务里每条 prompt 都互不相同（如独立文档的离线批处理），前缀缓存只会白占显存，此时应调低缓存容量甚至关闭。上线前用真实流量统计命中率（vLLM / SGLang 均暴露 prefix cache hit rate 指标），比盲目开启更重要。</p><h3>架构级优化：PD 分离</h3><p>当 Prefill 与 Decode 的资源矛盾在机内无法靠调度调和时，必然走向架构解耦。</p><p><strong>为什么必须分离：两阶段资源诉求相差约 140 倍。</strong></p><p>同一个模型、同一块卡，Prefill 与 Decode 的吞吐差距是数量级的。以 20 层模型在消费级卡上的实测为例（视频作者数据）：<strong>Prefill 约 14,000 token/s，Decode 约 100 token/s，相差约 140 倍</strong>。更麻烦的是二者对硬件的偏好相反：</p><ul>
-<li><strong>Prefill</strong> 要<strong>强算力</strong>（高 FLOPs、可接受较小显存），算力越猛 TTFT 越低；</li>
-<li><strong>Decode</strong> 要<strong>大显存 + 高带宽</strong>（装得下权重与大量 KV、搬得快），算力反而不重要。</li>
-</ul><p>把两阶段<strong>混部（Co-located）</strong>在同一批 GPU 上，会互相干扰：长 Prefill 拖慢 Decode 的 ITL，Decode 又占着算力让 Prefill 排队，资源配比无法同时满足两边，整体利用率与 SLO 双输。</p><figure class="fig">
-<svg aria-label="Prefill Decode 吞吐差距与利用率对比" role="img" viewbox="0 0 900 280">
-<g font-family="inherit">
-<text fill="#16233a" font-size="13" font-weight="700" x="40" y="40">吞吐差距（20 层模型实测）</text>
-<line stroke="#94a3b8" x1="80" x2="360" y1="236" y2="236"></line>
-<rect fill="#0d9488" height="160" rx="6" width="70" x="110" y="76"></rect>
-<text fill="#0d9488" font-size="12" font-weight="700" text-anchor="middle" x="145" y="66">Prefill</text>
-<text fill="#fff" font-size="11" text-anchor="middle" x="145" y="96">~14,000</text>
-<text fill="#d4ece9" font-size="10" text-anchor="middle" x="145" y="112">tok/s</text>
-<rect fill="#b9832b" height="22" rx="6" width="70" x="230" y="214"></rect>
-<text fill="#b9832b" font-size="12" font-weight="700" text-anchor="middle" x="265" y="206">Decode ~100 tok/s</text>
-<text fill="#e8590c" font-family="JetBrains Mono" font-size="16" font-weight="800" text-anchor="middle" x="200" y="264">≈ 140×</text>
-<line stroke="#d7dee8" stroke-dasharray="5 5" x1="400" x2="400" y1="40" y2="250"></line>
-<text fill="#16233a" font-size="13" font-weight="700" x="430" y="40">集群利用率（示意）</text>
-<text fill="#3c4d66" font-size="12" x="430" y="92">混部 Co-located</text>
-<rect fill="#eef1f5" height="22" rx="6" width="400" x="430" y="100"></rect>
-<rect fill="#23456f" height="22" rx="6" width="160" x="430" y="100"></rect>
-<text fill="#fff" font-size="11" font-weight="700" x="600" y="116">~40%（互相干扰）</text>
-<text fill="#3c4d66" font-size="12" x="430" y="160">PD 分离 Disaggregated</text>
-<rect fill="#e2f1ef" height="22" rx="6" width="400" x="430" y="168"></rect>
-<rect fill="#0d9488" height="22" rx="6" width="340" x="430" y="168"></rect>
-<text fill="#fff" font-size="11" font-weight="700" text-anchor="end" x="782" y="184">~85%</text>
-<text fill="#697a92" font-size="11" x="430" y="214">两类资源独立扩缩容、各跑最适合的阶段</text>
-<text fill="#e8590c" font-size="11" font-weight="700" x="430" y="232">Mooncake：吞吐 +75%、TTFT −25%</text>
-</g>
-</svg>
-<figcaption><b>图 31</b><span>左：Prefill/Decode 吞吐差约两个数量级；右：混部互相干扰、利用率低，PD 分离后两类资源独立配比、利用率与 SLO 同时改善（数值为论文/实测量级，具体随模型与硬件变化）。</span></figcaption>
-</figure><p><strong>怎么做：两池拆分，KV 迁移。</strong></p><p>核心是把两阶段拆到不同 GPU 池、<strong>各自独立扩缩容</strong>：请求先进 Prefill 池完成提示计算与首 token，生成的 KV Cache 通过高速互联<strong>整体搬运/复制</strong>到 Decode 池，再由 Decode 池完成后续自回归生成并流式返回。难点不在“拆”，而在<strong>KV Cache 的高效迁移与全局调度</strong>。</p><figure class="fig">
-<svg aria-label="PD 分离架构" role="img" viewbox="0 0 900 310">
-<defs><marker id="ar5" markerheight="10" markerwidth="10" orient="auto" refx="8" refy="5"><path d="M0,0 L10,5 L0,10 Z" fill="#3c4d66"></path></marker></defs>
-<g font-family="inherit">
-<!-- scheduler -->
-<rect fill="#16233a" height="40" rx="10" width="240" x="330" y="20"></rect>
-<text fill="#fff" font-size="13.5" font-weight="700" text-anchor="middle" x="450" y="46">全局调度器 / 路由（SLO 感知）</text>
-<!-- prefill pool -->
-<rect fill="#e7eff9" height="160" rx="14" stroke="#23456f" stroke-width="1.6" width="250" x="50" y="92"></rect>
-<text fill="#23456f" font-size="14" font-weight="800" text-anchor="middle" x="175" y="118">Prefill GPU 池</text>
-<g fill="#23456f">
-<rect height="44" rx="7" width="62" x="78" y="134"></rect><rect height="44" rx="7" width="62" x="150" y="134"></rect><rect height="44" rx="7" width="56" x="222" y="134"></rect>
-<rect height="44" rx="7" width="62" x="78" y="188"></rect><rect height="44" rx="7" width="62" x="150" y="188"></rect><rect height="44" rx="7" width="56" x="222" y="188"></rect>
-</g>
-<text fill="#23456f" font-size="11" text-anchor="middle" x="175" y="246">高 FLOPs 配置，算力优先</text>
-<!-- transfer -->
-<rect fill="#0d9488" height="104" rx="14" width="160" x="370" y="120"></rect>
-<text fill="#fff" font-size="13.5" font-weight="800" text-anchor="middle" x="450" y="152">KV 迁移层</text>
-<text fill="#d4ece9" font-size="11" text-anchor="middle" x="450" y="174">RDMA / NVLink</text>
-<text fill="#d4ece9" font-size="11" text-anchor="middle" x="450" y="192">GPUDirect / NIXL</text>
-<text fill="#bfe0db" font-size="10.5" text-anchor="middle" x="450" y="214">页对齐、零拷贝传输</text>
-<!-- decode pool -->
-<rect fill="#f7efdd" height="160" rx="14" stroke="#b9832b" stroke-width="1.6" width="250" x="600" y="92"></rect>
-<text fill="#b9832b" font-size="14" font-weight="800" text-anchor="middle" x="725" y="118">Decode GPU 池</text>
-<g fill="#b9832b">
-<rect height="44" rx="7" width="62" x="628" y="134"></rect><rect height="44" rx="7" width="62" x="700" y="134"></rect><rect height="44" rx="7" width="56" x="772" y="134"></rect>
-<rect height="44" rx="7" width="62" x="628" y="188"></rect><rect height="44" rx="7" width="62" x="700" y="188"></rect><rect height="44" rx="7" width="56" x="772" y="188"></rect>
-</g>
-<text fill="#b9832b" font-size="11" text-anchor="middle" x="725" y="246">大显存 / 高带宽配置</text>
-<!-- arrows -->
-<g fill="none" marker-end="url(#ar5)" stroke="#3c4d66" stroke-width="2">
-<path d="M380,46 L175,92"></path><path d="M520,46 L725,92"></path>
-<line x1="300" x2="366" y1="172" y2="172"></line><line x1="530" x2="596" y1="172" y2="172"></line>
-</g>
-<text fill="#3c4d66" font-size="10.5" text-anchor="middle" x="333" y="162">推送 KV</text>
-<line marker-end="url(#ar5)" stroke="#e8590c" stroke-width="2" x1="725" x2="725" y1="252" y2="282"></line>
-<text fill="#e8590c" font-size="11.5" font-weight="700" text-anchor="middle" x="725" y="300">流式输出 token</text>
-</g>
-</svg>
-<figcaption><b>图 32</b><span>PD 分离架构：全局调度器把请求导向 Prefill 池，KV 经高速迁移层送到 Decode 池独立生成。两池硬件型号、卡数、并行策略可完全不同，按各自瓶颈独立扩缩容。</span></figcaption>
-</figure><p><strong>两池内部的并行策略也可以各自选。</strong>推理常用的并行方式有三种：<strong>张量并行（TP）</strong>把每层权重切到多卡、每层两次 AllReduce——Decode 带宽受限时，TP 让单卡搬运量除以 N（图 32），是 Decode 池最常用的手段，代价是通信随卡数上升（A10 无 NVLink、走 PCIe，一般不超过 2–4 卡）；<strong>流水并行（PP）</strong>按层切分、卡间只传激活，通信少但调度复杂，推理用得少；<strong>专家并行（EP）</strong>是 MoE 专属，专家分到不同卡、token 经 All-to-All 路由。Prefill 池偏算力、常配较大 TP；Decode 池偏带宽与显存，TP / EP 按 KV 容量与带宽目标定——这就是图 31 里“两池并行策略可完全不同”的具体含义。</p>
-<figure class="fig">
-<svg aria-label="张量并行 TP 切分与 AllReduce" role="img" viewbox="0 0 900 320">
-<g font-family="inherit">
-<text fill="#697a92" font-size="11.5" font-weight="700" x="40" y="60">一层权重矩阵 W（按列切成 4 块）</text>
-<g>
-<rect fill="#0d9488" height="150" opacity="0.9" width="45" x="40" y="76"></rect>
-<rect fill="#0d9488" height="150" opacity="0.65" width="45" x="85" y="76"></rect>
-<rect fill="#0d9488" height="150" opacity="0.4" width="45" x="130" y="76"></rect>
-<rect fill="#0d9488" height="150" opacity="0.2" width="45" x="175" y="76"></rect>
-<rect fill="none" height="150" rx="6" stroke="#0f766e" width="180" x="40" y="76"></rect>
-</g>
-<g fill="none" stroke="#8fa3b8" stroke-width="1.8">
-<line x1="222" x2="324" y1="151" y2="56"></line><line x1="222" x2="324" y1="151" y2="124"></line>
-<line x1="222" x2="324" y1="151" y2="192"></line><line x1="222" x2="324" y1="151" y2="260"></line>
-</g>
-<g font-size="11.5">
-<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="30"></rect>
-<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="98"></rect>
-<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="166"></rect>
-<rect fill="#fff" height="52" rx="9" stroke="#0d9488" stroke-width="1.6" width="176" x="328" y="234"></rect>
-</g>
-<g fill="#16233a" font-size="12" text-anchor="middle">
-<text x="416" y="52">GPU 0 · 列块 1/4</text><text x="416" y="120">GPU 1 · 列块 2/4</text>
-<text x="416" y="188">GPU 2 · 列块 3/4</text><text x="416" y="256">GPU 3 · 列块 4/4</text>
-</g>
-<g fill="#697a92" font-size="10.5" text-anchor="middle">
-<text x="416" y="70">各算部分和</text><text x="416" y="138">各算部分和</text>
-<text x="416" y="206">各算部分和</text><text x="416" y="274">各算部分和</text>
-</g>
-<g fill="none" stroke="#e8590c" stroke-width="2">
-<line x1="506" x2="572" y1="56" y2="128"></line><line x1="506" x2="580" y1="124" y2="140"></line>
-<line x1="506" x2="580" y1="192" y2="162"></line><line x1="506" x2="572" y1="260" y2="176"></line>
-</g>
-<ellipse cx="652" cy="151" fill="#e8590c" rx="86" ry="50"></ellipse>
-<text fill="#fff" font-size="13" font-weight="700" text-anchor="middle" x="652" y="146">AllReduce</text>
-<text fill="#fde3d3" font-size="10.5" text-anchor="middle" x="652" y="166">各部分和跨卡相加</text>
-<g fill="none" stroke="#8fa3b8" stroke-width="2"><line x1="740" x2="806" y1="151" y2="151"></line><path d="M806,145 L816,151 L806,157 Z" fill="#8fa3b8" stroke="none"></path></g>
-<text fill="#16233a" font-size="12" font-weight="700" x="822" y="155">完整输出</text>
-<text fill="#697a92" font-size="11" x="40" y="310">每层 2 次 AllReduce（注意力投影后、MLP 后）；Decode 带宽受限时单卡权重搬运量 ÷ N，代价是通信开销随卡数上升</text>
-</g>
-</svg>
-<figcaption><b>图 33</b><span>张量并行（TP）：把一层权重按列切到 4 张卡，各卡只存、只读自己的分块并算部分和，再经 AllReduce 合并出完整输出。Decode 池常用 TP 压低单卡搬运量；无 NVLink 的卡（如 A10）通信走 PCIe，TP 规模不宜大。</span></figcaption>
-</figure>
-<p><strong>三篇奠基论文，三种侧重。</strong></p><div class="paper gold"><span class="pid">DistServe</span><div><div class="ptitle">DistServe: Disaggregating Prefill and Decoding for Goodput-optimized LLM Serving</div><div class="pinfo">Zhong et al. · UC Berkeley / UChicago · OSDI 2024 · 用 Goodput（SLO 达标吞吐）论证分离的必要性，两阶段独立部署、独立并行策略，Goodput 提升数量级</div></div><a href="https://arxiv.org/abs/2401.09670">arXiv:2401.09670</a></div><div class="paper gold"><span class="pid">Mooncake</span><div><div class="ptitle">Mooncake: A KVCache-centric Disaggregated Architecture for LLM Serving</div><div class="pinfo">Qin et al. · Moonshot AI / 清华大学 · FAST 2025 最佳论文（期刊扩展版 ACM TOS 2025）· 以 KV Cache 为中心，Prefill/Decode 分离 + 跨 GPU/CPU/SSD 的全局 KV Cache Pool 与 KV Agent 调度；集群吞吐 +75%、TTFT −25%（Kimi 生产验证，已开源）</div></div><a href="https://arxiv.org/abs/2407.00079">arXiv:2407.00079</a></div><div class="paper gold"><span class="pid">Splitwise</span><div><div class="ptitle">Splitwise: Efficient Generative LLM Inference Using Phase Splitting</div><div class="pinfo">Patel, Choukse et al. · Microsoft · ISCA 2024 · 把 Prefill/Decode 拆到<strong>最具性价比的异构硬件</strong>上（强算力卡跑 Prefill、大显存/低成本卡跑 Decode），以最小化每 token 成本，KV 经 RDMA 迁移</div></div><a href="https://arxiv.org/abs/2311.18677">arXiv:2311.18677</a></div><div class="tbl-scroll">
-<table>
-<colgroup><col style="width:16%"/><col style="width:30%"/><col style="width:28%"/><col style="width:26%"/></colgroup>
-<thead><tr><th>方案</th><th>核心主张</th><th>KV Cache 处理</th><th>最适合回答的问题</th></tr></thead>
-<tbody>
-<tr><td>DistServe</td><td>按 Goodput 重配资源，两阶段独立扩缩</td><td>Prefill→Decode 高速直传</td><td>“怎样让 SLO 达标吞吐最大？”</td></tr>
-<tr><td>Mooncake</td><td>KVCache-centric，全局多级缓存 + 全局调度</td><td>跨 GPU/CPU/SSD 的 KV Pool，可复用、可落盘</td><td>“超大规模多租户、多轮对话怎么省？”</td></tr>
-<tr><td>Splitwise</td><td>异构硬件按阶段分工，成本最优</td><td>跨机 RDMA 迁移</td><td>“怎样把每 token 成本打到最低？”</td></tr>
-</tbody>
-</table>
-</div><p><strong>关键工程问题：KV Cache 怎么搬。</strong></p><div class="tbl-scroll">
-<table>
-<colgroup><col style="width:22%"/><col style="width:24%"/><col style="width:30%"/><col style="width:24%"/></colgroup>
-<thead><tr><th>通道</th><th>典型带宽</th><th>适用范围</th><th>特点</th></tr></thead>
-<tbody>
-<tr><td>NVLink / NVSwitch</td><td>~900 GB/s（H100）</td><td>同一节点内 GPU 之间</td><td>最快，P/D 同机时首选</td></tr>
-<tr><td>RDMA（RoCE / InfiniBand）</td><td>400/800 Gb/s（约 50–100 GB/s）</td><td>跨节点、跨 P/D 池</td><td>绕过 CPU、零拷贝，生产主流</td></tr>
-<tr><td>GPUDirect (Storage/Memory)</td><td>随 PCIe/NIC</td><td>GPU 直访对端显存 / 存储</td><td>避免经主机内存中转</td></tr>
-<tr><td>PCIe / TCP 回退</td><td>较低</td><td>无高速互联时兜底</td><td>实现简单、延迟高</td></tr>
-</tbody>
-</table>
-</div><p>工程上还会做：KV 块<strong>页对齐、压缩后再传（FP8）、传输与计算重叠、只传增量</strong>，把迁移成本摊到流水线里，使它不成为新瓶颈。另一个配套手段是 <strong>KV 分层 offload</strong>：热 KV 留在 GPU 显存，温 KV 下沉 CPU 内存，冷 KV（如多轮对话的历史轮次）落 SSD——Mooncake 的全局 KV Pool 正是这一思路的集群化，让显存只装“正在用”的部分。</p>
-<figure class="fig">
-<svg aria-label="KV Cache 分层 offload：GPU、CPU、SSD" role="img" viewbox="0 0 900 290">
-<g font-family="inherit">
-<rect fill="#0d9488" height="64" rx="10" width="560" x="40" y="50"></rect>
-<text fill="#fff" font-size="13" font-weight="700" x="60" y="76">GPU HBM · 热 KV</text>
-<text fill="#c9efea" font-size="10.5" x="60" y="96">正在 Decode 的请求 · TB/s 级带宽 · 最贵</text>
-<g fill="#fff" opacity="0.85"><rect height="30" rx="5" width="44" x="380" y="67"></rect><rect height="30" rx="5" width="44" x="432" y="67"></rect><rect height="30" rx="5" width="44" x="484" y="67"></rect><rect height="30" rx="5" width="44" x="536" y="67"></rect></g>
-<rect fill="#8fa3b8" height="64" rx="10" width="560" x="40" y="140"></rect>
-<text fill="#fff" font-size="13" font-weight="700" x="60" y="166">CPU 内存 · 温 KV</text>
-<text fill="#e8eef4" font-size="10.5" x="60" y="186">被抢占 / 等待调度的请求 · 百 GB/s 级</text>
-<g fill="#fff" opacity="0.8"><rect height="30" rx="5" width="44" x="432" y="157"></rect><rect height="30" rx="5" width="44" x="484" y="157"></rect></g>
-<rect fill="#f1f5f9" height="48" rx="10" stroke="#d7dee8" width="560" x="40" y="230"></rect>
-<text fill="#475569" font-size="13" font-weight="700" x="60" y="252">SSD · 冷 KV</text>
-<text fill="#7c8aa0" font-size="10.5" x="60" y="269">多轮历史、跨会话复用 · GB/s 级 · 最便宜</text>
-<g fill="none" stroke="#697a92" stroke-width="2">
-<line x1="622" x2="622" y1="118" y2="134"></line><path d="M616,124 L622,116 L628,124 Z" fill="#697a92" stroke="none"></path><path d="M616,128 L622,136 L628,128 Z" fill="#697a92" stroke="none"></path>
-<line x1="622" x2="622" y1="208" y2="224"></line><path d="M616,214 L622,206 L628,214 Z" fill="#697a92" stroke="none"></path><path d="M616,218 L622,226 L628,218 Z" fill="#697a92" stroke="none"></path>
-</g>
-<g fill="#697a92" font-size="10.5"><text x="638" y="130">换出 / 换回</text><text x="638" y="220">落盘 / 加载</text></g>
-<text fill="#16233a" font-size="11.5" font-weight="700" x="722" y="130">命中即免重算 Prefill</text>
-<text fill="#697a92" font-size="10.5" x="722" y="150">Mooncake 把这套分层</text>
-<text fill="#697a92" font-size="10.5" x="722" y="167">做成集群级 KV Pool</text>
-</g>
-</svg>
-<figcaption><b>图 34</b><span>KV 分层 offload：热 KV 留 GPU 显存、温 KV 下沉 CPU 内存、冷 KV 落 SSD；请求重新激活时命中即免于重跑 Prefill。层级越往下带宽越低、成本越省——Mooncake 的 KV Pool 正是这一思路的集群化。</span></figcaption>
-</figure>
-<p><strong>前沿：PD 分离正在「产品化、标配化」。</strong></p><div class="callout c-teal"><span class="ct">NVIDIA Dynamo（2025 GTC 开源）</span><p>NVIDIA 推出的开源分布式推理编排框架，原生支持 <strong>Prefill/Decode 分离、GPU 异构与 SLO 感知路由</strong>，并配套 <strong>NIXL（NVIDIA Inference Xfer Library）</strong>做跨机 KV Cache 的异步零拷贝传输，与 TensorRT-LLM / vLLM 等引擎解耦。这标志着 PD 分离从“论文最佳实践”变成<strong>开箱即用的标准架构</strong>；vLLM、SGLang、Mooncake 也都已内置 disaggregated 模式。</p></div><div class="callout c-teal"><span class="ct">两章手段如何叠加</span><p>机内优化（6.2）把单块 GPU 打满，架构解耦（6.3）让两类资源独立扩缩；它们与第 3 章的 KV Cache 家族、FlashAttention、量化全部可叠加——最终目标都是 SLO 达标前提下最大化 Goodput、最小化每 token 成本。</p></div></section>
 <!-- ================= 第 7 章 · 总结 ================= -->
 <section class="wrap" id="ch7">
 <div class="sec-head"><span class="sec-no">07</span><h2>总结、落地清单与前沿趋势</h2><span class="sub">SUMMARY &amp; OUTLOOK</span></div>
@@ -2003,7 +2007,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </tbody>
 </table>
 </div>
-<div class="callout c-gold"><span class="ct">常见反模式（各章边界条件的汇总）</span><p>① <strong>盲目调大 batch</strong>：吞吐升了、TTFT/ITL 劣化，Goodput 反而下降（6.1）；② <strong>高并发开投机解码</strong>：系统已是 Compute-Bound，额外验证算力拖低吞吐（4.3）；③ <strong>Compute-Bound 场景做权重量化</strong>：W4A16 只省带宽，瓶颈不在带宽时无收益（3.4）；④ <strong>前缀各异的业务开 RadixAttention</strong>：命中率≈0 还白占显存（6.2）；⑤ <strong>KV 驱逐不看 Attention Sink</strong>：丢掉开头几个 token，输出立刻崩坏（3.2）。共同教训：<strong>先用 Roofline 与指标判瓶颈，再选优化手段</strong>。</p></div>
+<div class="callout c-gold"><span class="ct">常见反模式（各章边界条件的汇总）</span><p>① <strong>盲目调大 batch</strong>：吞吐升了、TTFT/ITL 劣化，Goodput 反而下降（4.1）；② <strong>高并发开投机解码</strong>：系统已是 Compute-Bound，额外验证算力拖低吞吐（5.3）；③ <strong>Compute-Bound 场景做权重量化</strong>：W4A16 只省带宽，瓶颈不在带宽时无收益（3.4）；④ <strong>前缀各异的业务开 RadixAttention</strong>：命中率≈0 还白占显存（4.2）；⑤ <strong>KV 驱逐不看 Attention Sink</strong>：丢掉开头几个 token，输出立刻崩坏（3.2）。共同教训：<strong>先用 Roofline 与指标判瓶颈，再选优化手段</strong>。</p></div>
 <h3>前沿趋势（2025–2026）</h3>
 <ol>
 <li><strong>PD 分离“标配化”</strong>：NVIDIA Dynamo + NIXL、vLLM/SGLang/Mooncake 全部内置，分离架构成为大规模部署默认项。</li>

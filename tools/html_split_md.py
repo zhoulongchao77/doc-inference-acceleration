@@ -259,7 +259,7 @@ def main():
         body += more
         text = re.sub(r"\n{3,}", "\n\n", "\n".join(body)).strip()
         h3_titles = re.findall(r"^## " + re.escape(prefix) + r"\d+ (.+)$", text, re.M)
-        fname = "%02d-%s.md" % (si, re.sub(r'[\\/:*?"<>|]', "", title.split("：")[0])[:12])
+        fname = "%02d-%s.md" % (si, re.sub(r'[\\/:*?"<>|]', "", title.split("：")[0]).strip()[:16].strip())
         header = "# %s %s\n\n" % (no, title)
         with open(os.path.join(OUT, fname), "w", encoding="utf-8") as f:
             f.write(header + text + "\n")
