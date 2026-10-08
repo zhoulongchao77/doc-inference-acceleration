@@ -52,14 +52,17 @@ h1 em{font-style:normal;color:var(--accent);position:relative}
 .meta-row b{color:var(--ink);font-weight:600}
 .hero-top{display:flex;gap:28px;align-items:flex-start}
 .hero-main{flex:1;min-width:0}
-.author-card{flex:none;width:224px;background:var(--navy);color:#fff;border-radius:14px;padding:20px 18px;
-  box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:34px}
-.author-card .avatar{width:60px;height:60px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;
-  font-size:26px;font-weight:900;color:#fff}
+.author-card{flex:none;width:224px;background:linear-gradient(150deg,var(--navy) 0%,var(--navy-2) 60%,#3568a3 100%);color:#fff;
+  border-radius:14px;padding:20px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;
+  text-align:center;margin-top:34px;position:relative;overflow:hidden}
+.author-card .ribbon{position:absolute;top:14px;right:-32px;transform:rotate(38deg);background:var(--gold);color:#fff;
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;padding:3px 36px}
+.author-card .avatar{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#ffe9c4}
 .author-card .a-name{font-size:18px;font-weight:900;margin-top:10px;letter-spacing:.02em}
-.author-card .a-tag{font-size:12px;color:#ffd9bd;margin-top:3px;font-weight:500}
-.author-card .a-role{margin-top:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:#9fb4cd;
-  border-top:1px solid rgba(255,255,255,.18);padding-top:10px;width:100%}
+.author-card .a-tag{font-size:12px;color:#ffe9c4;margin-top:3px;font-weight:500}
+.author-card .a-role{margin-top:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:#b9c9dd;
+  border-top:1px solid rgba(255,255,255,.2);padding-top:10px;width:100%}
 @media(max-width:820px){.hero-top{flex-direction:column}.author-card{width:100%;margin-top:0}}
 .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:34px}
 .hstat{background:var(--navy);color:#fff;border-radius:12px;padding:16px 16px 14px;position:relative;overflow:hidden}
@@ -244,6 +247,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <p class="lead">把一次请求拆开来看：文字或图片先经 Tokenizer 变成序号，Embedding 查成向量，再流过几十个 Transformer 层完成推理计算，采样环节按输出的浮点数挑出下一个序号，最后由 Detokenizer 拼回文本——回答就是这样一个 token 接一个 token 产生的。AI 基建横跨硬件、算子、显存、调度与架构多个层次，本文把镜头对准<strong>推理层</strong>，沿着这条从输入到输出的路径，逐站看每个环节慢在哪、可以怎么优化，以及每项技术背后的原始论文。</p>
 </div>
 <div class="author-card">
+<div class="ribbon">AUTHOR</div>
 <div class="avatar">周</div>
 <div class="a-name">周龙超</div>
 <div class="a-tag">超周到的程序员</div>
