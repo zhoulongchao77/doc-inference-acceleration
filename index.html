@@ -166,7 +166,8 @@ th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line-soft)
 thead th{background:var(--navy);color:#fff;font-weight:600;font-size:13.5px;border-bottom:none}
 tbody tr:nth-child(even){background:#f6f9fc}
 tbody tr:hover{background:var(--accent-soft)}
-td:first-child,th:first-child{font-weight:600;color:var(--ink)}
+td:first-child{font-weight:600;color:var(--ink)}
+thead th:first-child{color:#fff}
 
 /* paper chip / cards */
 .paper{display:flex;gap:13px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:13.8px;box-shadow:var(--shadow)}
@@ -350,12 +351,10 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <g text-anchor="middle">
 <rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="150" x="115" y="364"></rect>
 <text fill="#3c4d66" font-size="11" x="190" y="380">Continuous Batching</text>
-<rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="140" x="285" y="364"></rect>
-<text fill="#3c4d66" font-size="11" x="355" y="380">Chunked Prefill</text>
-<rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="140" x="445" y="364"></rect>
-<text fill="#3c4d66" font-size="11" x="515" y="380">PagedAttention</text>
-<rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="140" x="605" y="364"></rect>
-<text fill="#3c4d66" font-size="11" x="675" y="380">RadixAttention</text>
+<rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="140" x="338" y="364"></rect>
+<text fill="#3c4d66" font-size="11" x="408" y="380">Chunked Prefill</text>
+<rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="140" x="552" y="364"></rect>
+<text fill="#3c4d66" font-size="11" x="622" y="380">RadixAttention</text>
 <rect fill="#f4f7fa" height="24" rx="12" stroke="#e2e8f0" width="100" x="765" y="364"></rect>
 <text fill="#3c4d66" font-size="11" x="815" y="380">PD 分离</text>
 </g>
@@ -512,7 +511,18 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <p>旅程第一站，是把人能看懂的输入变成模型能处理的<strong>整数序号（token ID）</strong>。这一站不占 GPU、却决定了后续所有计算的粒度：同一个意思，切出来的 token 越少，算得越快、KV Cache 也越小。</p>
 <figure class="minimap"><svg aria-label="流水线位置导航" role="img" viewbox="0 0 900 132"><g font-family="inherit"><rect fill="#f4f7fb" height="106" rx="14" width="884" x="8" y="10"></rect><text fill="#9aa6b5" font-size="10.5" font-weight="700" letter-spacing="2.5" x="28" y="32">流水线位置导航 · POSITION</text><g stroke="#c6cfda" stroke-width="1.8"><line x1="106" x2="112" y1="68" y2="68"></line><path d="M112,64 L116,68 L112,72 Z" fill="#c6cfda"><line x1="236" x2="242" y1="68" y2="68"></line><path d="M242,64 L246,68 L242,72 Z" fill="#c6cfda"><line x1="366" x2="372" y1="68" y2="68"></line><path d="M372,64 L376,68 L372,72 Z" fill="#c6cfda"><line x1="496" x2="502" y1="68" y2="68"></line><path d="M502,64 L506,68 L502,72 Z" fill="#c6cfda"><line x1="626" x2="632" y1="68" y2="68"></line><path d="M632,64 L636,68 L632,72 Z" fill="#c6cfda"><line x1="756" x2="772" y1="68" y2="68"></line><path d="M772,64 L776,68 L772,72 Z" fill="#c6cfda"></path></path></path></path></path></path></g><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="84" x="22" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="64" y="73">输入</text><circle cx="176" cy="40" fill="#16233a" r="3.5"></circle><rect fill="#fff" height="48" rx="10" stroke="#16233a" stroke-width="1.7" width="116" x="118" y="44"></rect><text fill="#16233a" font-size="11.8" font-weight="800" text-anchor="middle" x="176" y="65">Tokenizer</text><text fill="#7a8699" font-size="9.8" text-anchor="middle" x="176" y="82">文本转序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="248" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="306" y="65">Embedding</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="306" y="82">ID 转向量</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="378" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="436" y="65">Transformer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="436" y="82">主干计算 ×L</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="508" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="566" y="65">Sampling</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="566" y="82">挑选序号</text><rect fill="#fff" height="48" rx="10" stroke="#dde4ea" width="116" x="638" y="44"></rect><text fill="#9aa6b5" font-size="11.8" text-anchor="middle" x="696" y="65">Detokenizer</text><text fill="#b6c0cd" font-size="9.8" text-anchor="middle" x="696" y="82">序号转文本</text><rect fill="#fbfdfe" height="48" rx="10" stroke="#d2dbe6" stroke-dasharray="4 3" width="90" x="778" y="44"></rect><text fill="#a3aebd" font-size="12" font-weight="700" text-anchor="middle" x="823" y="73">输出</text><text fill="#697a92" font-size="11" text-anchor="middle" x="450" y="108">当前环节 · Tokenizer（文本转序号）</text></g></svg></figure>
 <h3>Tokenizer：文本怎样切成序号</h3>
-<p>主流大模型使用 <strong>BPE（Byte-Pair Encoding，字节对编码）</strong>类分词器：它在语料上预先统计“哪两个相邻片段最常一起出现”，把它们逐步合并成一个子词，最终形成一张 3–15 万大小的词表。分词时把句子从左到右 greedily 匹配词表，输出一串 ID；遇到没见过的词，就拆成已知的更小片段（极端情况退到字节），因此不会出现 OOV。</p>
+<p>主流大模型使用 <strong>BPE（Byte-Pair Encoding，字节对编码）</strong>类分词器，理解它要分清两个阶段：<strong>训练（建表）阶段</strong>在语料上反复统计“哪两个相邻片段最常一起出现”，把它们逐步合并，直到凑出一张 3–15 万大小的词表；而<strong>线上推理阶段不再做任何合并与统计</strong>，只拿训练好的词表做<strong>最长优先的贪心匹配</strong>，把文本切成子词、查成一串 ID。现在主流模型用的是<strong>字节级 BPE（BBPE，Byte-level BPE）</strong>：基础单元是 UTF-8 字节，任何生僻字、表情符号最终都能拆到单个字节，因此<strong>天然不存在 OOV（Out-of-Vocabulary，词表之外的未登录词）</strong>。分词是 CPU 上的文本预处理，不占 GPU 显存与算力。</p>
+<p>两个容易混淆的细节。其一，看 tokenizer 原始输出时会遇到 <code>Ġ</code> 这类符号，它表示“该子词前面有一个空格”——这是 GPT（tiktoken）实现暴露出来的可见记号；Qwen、DeepSeek 的 BBPE 底层同样区分词首空格，只是不把 <code>Ġ</code> 暴露成可见符号。其二，BBPE 与 LLaMA 所用 SentencePiece BPE 的核心差异在<strong>预分词（pre-tokenization）</strong>：BBPE 先按空格、标点、CJK 字符（中日韩统一表意文字）把文本粗切成片段、再在片段内部做 BPE 匹配，因此空格要靠特殊标记区分；SentencePiece 则直接在包含空格的完整字符串上训练，空格本身就是普通子词，无需预分词、也无需额外标记。</p>
+<table>
+<colgroup><col style="width:17%"/><col style="width:23%"/><col style="width:17%"/><col style="width:43%"/></colgroup>
+<thead><tr><th>模型</th><th>分词算法 / 实现</th><th>词表大小</th><th>要点</th></tr></thead>
+<tbody>
+<tr><td><strong>GPT 系列</strong></td><td>BBPE · tiktoken</td><td>约 100k</td><td>原始 token 可见 <code>Ġ</code>；数字不强制逐位拆</td></tr>
+<tr><td><strong>Qwen 全系</strong></td><td>BBPE · tiktoken</td><td>151,643</td><td>数字强制拆成单数字 token；不暴露 <code>Ġ</code></td></tr>
+<tr><td><strong>DeepSeek V2/V3/R1</strong></td><td>BBPE · HuggingFace tokenizers</td><td>V2 100k；V3/R1 128k</td><td>自带预分词规则；数字强制拆成单数字 token</td></tr>
+<tr><td><strong>LLaMA 2/3</strong></td><td>SentencePiece BPE</td><td>128k</td><td>无需预分词，空格是普通子词；数字强制拆成单数字 token</td></tr>
+</tbody>
+</table>
 <p>对中文业务还有一个容易忽略的量化事实：<strong>不同词表对中文的切分粒度差异很大</strong>。早期以英文为主的词表里一个汉字可能要拆成 2–3 个 token，而面向中文扩容过的词表（Qwen、GLM 等）通常在 1 个汉字 1 个 token 上下——同一句话的 token 数可以差到 1.5–2×。token 数直接决定 Prefill 算力、KV Cache 体积和按 token 计费的账单，所以评估一个模型是否适合自己的业务，<strong>用真实业务语料实测“每千字 token 数”，是比看参数量更实在的口径</strong>。</p>
 <figure class="fig">
 <svg aria-label="BPE 分词与 ID" role="img" viewbox="0 0 900 250">
@@ -544,21 +554,21 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </g>
 </g>
 <!-- right panel -->
-<text fill="#16233a" font-size="14" font-weight="800" x="470" y="52">BPE 分词要点</text>
+<text fill="#16233a" font-size="14" font-weight="800" x="470" y="52">BPE 的两个阶段</text>
 <g fill="#3c4d66" font-size="12.5">
-<text x="470" y="84">① 从最小的字符 / 字节单元开始</text>
-<text x="470" y="110">② 每轮合并语料中频率最高的相邻对</text>
-<text x="470" y="136">③ 重复合并，直到词表上限</text>
-<text x="470" y="162">④ 未登录词拆成已知子词，不会 OOV</text>
-<text x="470" y="188">特殊 token（如 &lt;|im_start|&gt;）整体保留</text>
-<text x="470" y="214">中文多按单字 / 子字切，数字常逐位切</text>
+<text x="470" y="84">① 训练：从字符 / 字节单元起步</text>
+<text x="470" y="110">② 训练：反复合并频率最高的相邻对</text>
+<text x="470" y="136">③ 训练：合并至词表上限（3–15 万）</text>
+<text x="470" y="162">④ 分词：按词表最长优先贪心匹配</text>
+<text x="470" y="188">生词逐层拆小至字节，不会 OOV</text>
+<text x="470" y="214">特殊 token（如 &lt;|im_start|&gt;）整体保留</text>
 </g>
 </g>
 </svg>
-<figcaption><b>图 4</b><span>BPE 把文本切成子词序列、再查成 ID（ID 为示例值）。前缀 <code>Ġ</code> 表示词前空格，是字节级 BPE 的特殊标记。分词在 CPU 上完成，不占 GPU。</span></figcaption>
+<figcaption><b>图 4</b><span>BPE 把文本切成子词序列、再查成 ID（ID 为示例值）。前缀 <code>Ġ</code> 表示词前空格，是 GPT / tiktoken 暴露的可见记号（Qwen、DeepSeek 底层同样标记词首空格，但不暴露该符号）。分词在 CPU 上完成，不占 GPU。</span></figcaption>
 </figure>
 <h3>图片怎样进来：视觉编码器与图像 token</h3>
-<p>多模态模型里，图片<strong>不是直接进入 Transformer</strong>：它先被切成小块（patch），由一个<strong>视觉编码器（ViT）</strong>编码、再经投影层对齐维度，变成一组图像 embedding，与文本 token 的向量<strong>拼接成同一条序列</strong>，之后走的是完全相同的推理路径。分辨率越高、图像 token 越多（常见一张图数百到上千 token），算力与 KV Cache 开销随之增长。</p>
+<p>多模态模型里，图片<strong>不是直接进入 Transformer</strong>：它先被切成小块（patch），由<strong>视觉编码器</strong>编码、再经<strong>投影层（projector）</strong>对齐，变成一组图像 embedding，与文本 token 的向量<strong>拼接成同一条序列</strong>，之后走的是完全相同的推理路径。视觉编码器几乎清一色是 <strong>ViT（Vision Transformer）及其变体</strong>：Qwen-VL 系列用原生 ViT（Qwen2.5-VL 加了窗口注意力，Qwen3-VL 换成 SigLIP-2，仍属 ViT 家族），LLaVA、InternVL 用 CLIP-ViT / SigLIP，DeepSeek-VL 用 SigLIP + SAM-ViT 双编码器（一个抓全局语义、一个抓细节）；老 CNN（卷积神经网络）方案在通用图文模型里基本被淘汰。图像 token 与文本 token 共用同一套 Transformer，分辨率越高、图像 token 越多（常见一张图数百到上千 token），算力与 KV Cache 开销随之增长。</p>
 <p>图像 token 的数量是可以自己算出来的：以 Qwen2-VL 式的动态分辨率为例，ViT 按 14×14 像素切 patch、再经 2×2 合并，图像 token 数约为 $\frac{H}{28}\times\frac{W}{28}$（不同模型的 patch 与合并参数不同）——一张 1024×1024 的图约 1300 token，4K 分辨率则上万。视频则是“<strong>帧采样 × 每帧 token</strong>”，几秒视频轻松吃掉数千 token。多模态场景的显存规划，第一步就是把这条公式代进第 3 章的 KV 公式里。</p>
 <figure class="fig">
 <svg aria-label="图片经 ViT 编码为图像 token" role="img" viewbox="0 0 900 290">
@@ -598,6 +608,17 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 </svg>
 <figcaption><b>图 5</b><span>图片接入路径：像素 → patch 网格 → ViT + 投影 → 图像 embedding，与文本 token 拼接。之后的 KV Cache、批处理、采样等优化对图像 token 同样生效。</span></figcaption>
 </figure>
+<p>链路中间的<strong>投影层</strong>值得单独一说：ViT 输出的图像特征与 LLM 的文本 embedding <strong>维度不同、向量空间也不同</strong>，不能直接拼接。投影层做三件事——<strong>① 维度匹配</strong>，把 ViT 输出变换到与文本 embedding 相同的维度，满足 Transformer 的输入格式；<strong>② 跨模态语义对齐</strong>，相当于“翻译器”，把图像特征映射到文本语义空间，让语言模型“看得懂”图片；<strong>③ 可选的 token 压缩</strong>，合并 / 降采样 patch 特征，直接减少图像 token 数、降低 KV Cache 开销。投影层的参数量远小于 ViT 和 LLM 主干，因此很多训练策略会冻结 ViT 与 LLM、只训练投影层来做图文对齐。</p>
+<table>
+<colgroup><col style="width:20%"/><col style="width:24%"/><col style="width:22%"/><col style="width:22%"/><col style="width:12%"/></colgroup>
+<thead><tr><th>投影层方案</th><th>结构</th><th>优点</th><th>缺点</th><th>典型模型</th></tr></thead>
+<tbody>
+<tr><td><strong>单层 Linear</strong></td><td>1 层全连接矩阵变换</td><td>最简单、参数量最少、推理快</td><td>只有线性变换，跨模态对齐能力偏弱</td><td>早期简易多模态原型</td></tr>
+<tr><td><strong>2 层 MLP</strong>（Linear+GELU+Linear）</td><td>两层线性层夹一个非线性激活</td><td>兼顾速度与对齐能力，工程友好</td><td>token 数量不变，图像 token 多时显存压力依旧</td><td>LLaVA、Qwen2-VL（最广泛的标准方案）</td></tr>
+<tr><td><strong>Resampler / Q-Former</strong></td><td>用一组可学习 query 对 ViT 特征做注意力池化</td><td>大幅压缩图像 token（几百 patch → 几十个），显著省 KV Cache</td><td>参数量更大、训练成本更高，推理增加少量算力</td><td>Flamingo、InternVL 系列</td></tr>
+</tbody>
+</table>
+<p style="margin-top:2px">补充一句：DeepSeek-VL 的双 ViT 方案是把两个编码器的输出特征<strong>先融合、再一起送入投影层</strong>映射到 LLM 空间——投影层的位置和作用不变。</p>
 <div class="callout c-blue"><span class="ct">这一环节怎么优化</span>
 <p>① 分词在 CPU 异步执行、与 GPU 前向重叠，别让字符串处理阻塞推理；② 公共前缀（system prompt、多轮历史）在分词阶段即可识别，为 RadixAttention 的前缀复用铺路（第 6 章）；③ 为结构化输出 / 工具调用预留的特殊 token 应加进词表，避免在采样阶段被拆碎（第 4 章）。</p>
 <p>还有一个常踩的坑在分词之前：<strong>对话模板（Chat Template）</strong>。多轮对话并不是直接拼接文本，而是按模型约定的模板（如 <code>&lt;|im_start|&gt;user … &lt;|im_end|&gt;</code>）拼成一条带角色标记的字符串再分词——模板用错（换模型没换模板、系统提示位置拼错），模型不会报错、只会<strong>静默变笨</strong>；模板不一致还会让前缀缓存完全失效。上线前拿官方模板逐字节比对，是零成本的质量保险。</p></div>
