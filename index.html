@@ -245,7 +245,7 @@ footer.end p{font-size:13.5px;color:var(--muted)}
 <div class="hero-main">
 <div class="kicker">AI Infra · Inference &amp; Acceleration</div>
 <h1>大模型推理与加速：<br/>沿着<em>一次请求</em>从<em>输入</em>走到<em>输出</em></h1>
-<p class="lead">把一次请求拆开来看：文字或图片先经 Tokenizer 变成序号，Embedding 查成向量，再流过几十个 Transformer 层完成推理计算，采样环节按输出的浮点数挑出下一个序号，最后由 Detokenizer 拼回文本——回答就是这样一个 token 接一个 token 产生的。AI 基建横跨硬件、算子、显存、调度与架构多个层次，本文把镜头对准<strong>大模型推理与加速方向</strong>，沿着这条从输入到输出的路径，逐站看每个环节慢在哪、可以怎么优化，以及每项技术背后的原始论文。</p>
+<p class="lead">把一次请求拆开来看：文字或图片先经 Tokenizer 变成序号，再经 Embedding 转为向量，再流过几十个 Transformer 层完成推理计算，采样环节按输出的浮点数挑出下一个序号，最后由 Detokenizer 拼回文本——回答就是这样一个 token 接一个 token 产生的。AI 基建横跨硬件、算子、显存、调度与架构多个层次，本文把镜头对准<strong>大模型推理与加速方向</strong>，沿着这条从输入到输出的路径，逐站看每个环节慢在哪、可以怎么优化，以及每项技术背后的原始论文。</p>
 </div>
 <div class="author-card">
 <div class="ribbon">AUTHOR</div>
